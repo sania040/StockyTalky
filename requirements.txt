@@ -6,3 +6,5 @@ crewai
 plotly
 python-dotenv
 requests
+matplotlib
+seaborn
