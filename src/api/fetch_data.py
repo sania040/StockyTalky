@@ -1,6 +1,9 @@
 from dotenv import load_dotenv
 import os
 import requests
+from src.db.crypto_db import init_db, save_price
+
+
 
 def get_crypto_price(symbol: str) -> float:
     # load .env
@@ -19,6 +22,8 @@ def get_crypto_price(symbol: str) -> float:
     return data["data"][symbol]["quote"]["USD"]["price"]
 
 if __name__ == "__main__":
+    init_db()
     for coin in ["BTC", "ETH"]:
         price = get_crypto_price(coin)
         print(f"{coin}: ${price:,.2f}")
+        save_price(coin, price)
