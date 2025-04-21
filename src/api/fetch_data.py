@@ -1,19 +1,24 @@
-# Functions to fetch data from CoinMarketCap API
-
-import requests
-import os
 from dotenv import load_dotenv
+import os
+import requests
 
-load_dotenv()
-API_KEY = os.getenv('COINMARKETCAP_API_KEY')
+def get_crypto_price(symbol: str) -> float:
+    # load .env
+    load_dotenv()
+    api_key = os.getenv("COINMARKETCAP_API_KEY")
+    if not api_key:
+        raise RuntimeError("Set COINMARKETCAP_API_KEY in .env")
 
-headers = {
-    'Accepts': 'application/json',
-    'X-CMC_PRO_API_KEY': API_KEY,
-}
+    url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
+    headers = {"X-CMC_PRO_API_KEY": api_key}
+    params  = {"symbol": symbol, "convert": "USD"}
 
-def get_crypto_data(symbol='BTC'):
-    url = f'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
-    params = {'symbol': symbol}
-    response = requests.get(url, headers=headers, params=params)
-    return response.json()
+    resp = requests.get(url, headers=headers, params=params)
+    resp.raise_for_status()
+    data = resp.json()
+    return data["data"][symbol]["quote"]["USD"]["price"]
+
+if __name__ == "__main__":
+    for coin in ["BTC", "ETH"]:
+        price = get_crypto_price(coin)
+        print(f"{coin}: ${price:,.2f}")
