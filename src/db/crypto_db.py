@@ -14,9 +14,10 @@ def init_db():
     """)
     conn.commit()
     conn.close()
+    print("✅ prices table created/verified")
 
 def save_price(symbol, price):
-    conn = sqlite3.connect("crypto_data.db")
+    # conn = sqlite3.connect("crypto_data.db")
     cursor = conn.cursor()
     cursor.execute("""
         INSERT INTO prices (symbol, price, timestamp)
