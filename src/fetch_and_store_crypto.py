@@ -49,7 +49,6 @@ class CryptoDataFetcher:
             """, insert
         )
         conn.commit()
-        cur.close()
         return True
 
 # ——— PydanticAI Agent ———
@@ -62,7 +61,8 @@ agent = Agent(
     )
 )
 
-@agent.tool_plain(name="fetch", description="Fetch USD quote JSON for a symbol")
+# there will be no Description for the tools
+@agent.tool_plain(name="fetch") 
 def fetch(symbol: str) -> dict:
     """Fetch the raw JSON payload for a given symbol."""
     fetcher = CryptoDataFetcher(API_KEY)
@@ -71,7 +71,7 @@ def fetch(symbol: str) -> dict:
         raise ValueError(f"Bad response for {symbol}")
     return data
 
-@agent.tool_plain(name="store", description="Store fetched JSON into crypto_prices")
+@agent.tool_plain(name="store")
 def store(api_data: dict, symbol: str) -> str:
     """Store the given payload into Postgres and return status."""
     conn = get_db_connection()
