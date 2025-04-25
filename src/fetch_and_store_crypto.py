@@ -34,19 +34,19 @@ for symbol in symbols:
 
     response = requests.get(url, headers=headers, params=params)
     data = response.json()
-    
+
     try:
         quote = data['data'][symbol]['quote']['USD']
         price = quote['price']
         market_cap = quote['market_cap']
         volume_24h = quote['volume_24h']
-        percent_change_24h = quote['percent_change_24h']
-        percent_change_1h = quote['percent_change_1h']
-        percent_change_7d = quote['percent_change_7d']
-        percent_change_30d = quote['percent_change_30d']
-        percent_change_60d = quote['percent_change_60d']
-        market_cap_dominance = quote['market_cap_dominance']
-        fully_diluted_market_cap = quote['fully_diluted_market_cap']
+        percent_change_24h = quote.get('percent_change_24h', None)
+        percent_change_1h = quote.get('percent_change_1h', None)
+        percent_change_7d = quote.get('percent_change_7d', None)
+        percent_change_30d = quote.get('percent_change_30d', None)
+        percent_change_60d = quote.get('percent_change_60d', None)
+        market_cap_dominance = quote.get('market_cap_dominance', None)
+        fully_diluted_market_cap = quote.get('fully_diluted_market_cap', None)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         print(f"Fetched Data for {symbol}: {data}")
@@ -60,7 +60,7 @@ for symbol in symbols:
                     percent_change_30d, percent_change_60d, market_cap,
                     market_cap_dominance, fully_diluted_market_cap, timestamp, percent_change_90d
                 ) 
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 symbol, price, volume_24h, None, percent_change_1h, 
                 percent_change_24h, percent_change_7d, percent_change_30d, 
