@@ -14,7 +14,8 @@ Stockytalky is a crypto investment advisor tool that:
 
 ## Tech Stack
 - Python
-- SQLite/PostgreSQL
+- PostgreSQL
 - CoinMarketCap API
 - Streamlit
 - CrewAI
+- PydanticAI
