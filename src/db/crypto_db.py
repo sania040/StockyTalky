@@ -1,27 +1,29 @@
-import sqlite3
-from datetime import datetime
+import psycopg2
 
-def init_db():
-    conn = sqlite3.connect("crypto_data.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS prices (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            symbol TEXT NOT NULL,
-            price REAL NOT NULL,
-            timestamp TEXT NOT NULL
-        )
-    """)
-    conn.commit()
-    conn.close()
-    print("✅ prices table created/verified")
+conn = psycopg2.connect(
+    dbname="cryptodb",
+    user="postgres",
+    password="admin",
+    host="localhost",
+    port="5432"
+)
 
-def save_price(symbol, price):
-    # conn = sqlite3.connect("crypto_data.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO prices (symbol, price, timestamp)
-        VALUES (?, ?, ?)
-    """, (symbol, price, datetime.now().isoformat()))
-    conn.commit()
-    conn.close()
+cursor = conn.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS crypto_prices (
+    id SERIAL PRIMARY KEY,
+    symbol VARCHAR(10),
+    price_usd NUMERIC,
+    market_cap_usd NUMERIC,
+    volume_24h_usd NUMERIC,
+    percent_change_24h NUMERIC,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+""")
+
+conn.commit()
+cursor.close()
+conn.close()
+
+print("Table created successfully.")
