@@ -20,4 +20,3 @@ def get_db_connection():
         print(f"Error connecting to the database: {e}")
         raise e
 
-get_db_connection()

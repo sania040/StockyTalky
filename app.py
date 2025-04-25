@@ -1,7 +1,7 @@
 import streamlit as st
 from src.db.crypto_db import createTable
 from src.db.get_connection import get_db_connection
-from src.fetch_and_store_crypto import agent
+from src.fetch_and_store_crypto import agent, fetch, store
 import os, dotenv, psycopg2, pandas as pd
 
 dotenv.load_dotenv()
@@ -20,26 +20,33 @@ sel = st.selectbox("Select Symbol:", symbols)
 # Fetch
 if st.button(f"Fetch Data for {sel}"):
     with st.spinner("Fetching…"):
-        res = agent.invoke({"fetch": sel})
-        fetched = res["fetch"]
-        st.session_state["fetched_data"] = fetched
-        st.session_state["fetched_symbol"] = sel
-        st.success("Fetched ✔")
-        st.json(fetched["data"][sel])
+        try:
+            # Call the fetch function directly instead of using agent.invoke
+            # as we have named it already, 
+            fetched = fetch(sel)
+            st.session_state["fetched_data"] = fetched
+            st.session_state["fetched_symbol"] = sel
+            st.success("Fetched ✔")
+            st.json(fetched["data"][sel])
+        except Exception as e:
+            st.error(f"Fetch failed: {e}")
 
 # Store
 if st.session_state.get("fetched_symbol") == sel:
     if st.button(f"Add {sel} Data to DB"):
         with st.spinner("Storing…"):
-            fetched = st.session_state["fetched_data"]
-            out = agent.invoke({"store": {"api_data": fetched, "symbol": sel}})
-            status = out["store"]
-            if status == "stored":
-                st.success("Stored ✔")
-                del st.session_state["fetched_data"]
-                del st.session_state["fetched_symbol"]
-            else:
-                st.error("Store failed 😢")
+            try:
+                fetched = st.session_state["fetched_data"]
+                # Call the store function directly instead of using agent.invoke
+                status = store(api_data=fetched, symbol=sel)
+                if status == "stored":
+                    st.success("Stored ✔")
+                    del st.session_state["fetched_data"]
+                    del st.session_state["fetched_symbol"]
+                else:
+                    st.error("Store failed 😢")
+            except Exception as e:
+                st.error(f"Store failed: {e}")
 
 # View last 10 rows
 if st.button("Show Data from DB"):
