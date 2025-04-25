@@ -6,12 +6,12 @@ from datetime import datetime
 from src.db.get_connection import get_db_connection
 
 # PydanticAI imports
-from pydantic_ai import Agent, tool_plain
+from pydantic_ai import Agent
 
 load_dotenv()
 API_KEY = os.getenv("COINMARKETCAP_API_KEY")
 
-
+# ——— Your existing fetcher ———
 class CryptoDataFetcher:
     def __init__(self, api_key, api_url="https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"):
         self.api_key = api_key
@@ -22,7 +22,7 @@ class CryptoDataFetcher:
     def fetch_data_for_symbol(self, symbol):
         params = {'symbol': symbol, 'convert': 'USD'}
         headers = {'X-CMC_PRO_API_KEY': self.api_key}
-        resp = requests.get(self.api_url, headers=headers, arams=params)
+        resp = requests.get(self.api_url, headers=headers, params=params)
         resp.raise_for_status()
         return resp.json()
 
@@ -62,7 +62,7 @@ agent = Agent(
     )
 )
 
-@tool_plain(agent, name="fetch", description="Fetch USD quote JSON for a symbol")
+@agent.tool_plain(name="fetch", description="Fetch USD quote JSON for a symbol")
 def fetch(symbol: str) -> dict:
     """Fetch the raw JSON payload for a given symbol."""
     fetcher = CryptoDataFetcher(API_KEY)
@@ -71,7 +71,7 @@ def fetch(symbol: str) -> dict:
         raise ValueError(f"Bad response for {symbol}")
     return data
 
-@tool_plain(agent, name="store", description="Store fetched JSON into crypto_prices")
+@agent.tool_plain(name="store", description="Store fetched JSON into crypto_prices")
 def store(api_data: dict, symbol: str) -> str:
     """Store the given payload into Postgres and return status."""
     conn = get_db_connection()
@@ -80,4 +80,5 @@ def store(api_data: dict, symbol: str) -> str:
     return "stored" if ok else "failed"
 
 # Expose
+__all__ = ["agent", "fetch", "store", "CryptoDataFetcher"]
 __all__ = ["agent", "fetch", "store", "CryptoDataFetcher"]
