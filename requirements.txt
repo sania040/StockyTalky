@@ -4,7 +4,8 @@ requests
 python-dotenv
 crewai
 plotly
-python-dotenv
+psycopg2-binary
 requests
 matplotlib
 seaborn
+sqlalchemy
