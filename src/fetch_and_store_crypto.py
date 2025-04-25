@@ -2,6 +2,7 @@ import os
 import requests
 import psycopg2
 from dotenv import load_dotenv
+from datetime import datetime
 
 # Load API key from .env
 load_dotenv()
@@ -40,17 +41,44 @@ for symbol in symbols:
         market_cap = quote['market_cap']
         volume_24h = quote['volume_24h']
         percent_change_24h = quote['percent_change_24h']
+        percent_change_1h = quote['percent_change_1h']
+        percent_change_7d = quote['percent_change_7d']
+        percent_change_30d = quote['percent_change_30d']
+        percent_change_60d = quote['percent_change_60d']
+        market_cap_dominance = quote['market_cap_dominance']
+        fully_diluted_market_cap = quote['fully_diluted_market_cap']
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # Insert into DB
-        cursor.execute("""
-            INSERT INTO crypto_prices (symbol, price_usd, market_cap_usd, volume_24h_usd, percent_change_24h)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (symbol, price, market_cap, volume_24h, percent_change_24h))
-        print(f"{symbol} data inserted.")
+        print(f"Fetched Data for {symbol}: {data}")
+        
+        # Insert data into the database
+        try:
+            cursor.execute("""
+                INSERT INTO crypto_prices (
+                    symbol, price_usd, volume_24h, volume_change_24h,
+                    percent_change_1h, percent_change_24h, percent_change_7d,
+                    percent_change_30d, percent_change_60d, market_cap,
+                    market_cap_dominance, fully_diluted_market_cap, timestamp, percent_change_90d
+                ) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                symbol, price, volume_24h, None, percent_change_1h, 
+                percent_change_24h, percent_change_7d, percent_change_30d, 
+                percent_change_60d, market_cap, market_cap_dominance, 
+                fully_diluted_market_cap, timestamp, None
+            ))
+        except psycopg2.Error as e:
+            print(f"Error inserting data for {symbol}: {e}")
+            conn.rollback()  # Rollback to continue with the rest of the data
+
+    except KeyError as e:
+        print(f"Error parsing data for {symbol}: {e}")
     except Exception as e:
         print(f"Error inserting data for {symbol}: {e}")
 
+# Commit and close
 conn.commit()
 cursor.close()
 conn.close()
-print("All done!")
+
+print("Data insertion complete!")
