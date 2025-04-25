@@ -3,7 +3,7 @@ import requests
 import psycopg2
 from dotenv import load_dotenv
 from datetime import datetime
-from .db.get_connection import get_db_connection
+from src.db.get_connection import get_db_connection
 
 # Load API key from .env
 load_dotenv()
