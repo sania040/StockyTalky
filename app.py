@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
-from src.db.crypto_db import createTable
-from src.db.get_connection import get_db_connection
-from src.fetch_and_store_crypto import fetch, store
-from src.eda.crypto_eda import CryptoEDA
+from db.crypto_db import createTable
+from db.get_connection import get_db_connection
+from fetch_and_store_crypto import fetch, store
+from eda.crypto_eda import CryptoEDA
 
 # Setup page
 st.set_page_config(page_title="StockyTalky", page_icon="📊", layout="wide")
