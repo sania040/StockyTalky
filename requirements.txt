@@ -10,3 +10,5 @@ matplotlib
 seaborn
 sqlalchemy
 pydantic-ai
+seaborn
+numpy
