@@ -1,5 +1,5 @@
 import psycopg2
-from .get_connection import get_db_connection
+from src.db.get_connection import get_db_connection
 
 
 
