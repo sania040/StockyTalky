@@ -8,8 +8,13 @@ from src.eda.crypto_eda import CryptoEDA
 from src.visualizations import show_visualizations
 from src.chatbot import show_chatbot
 
-# Setup page
-st.set_page_config(page_title="StockyTalky", page_icon="📊", layout="wide")
+# This must be the first Streamlit command
+st.set_page_config(
+    page_title="StockyTalky - Crypto Analysis Platform",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
 # CSS for styling
 def load_css():
@@ -340,7 +345,7 @@ def main():
     
     selected = st.sidebar.radio(
         "Navigation", 
-        ["Data Collection", "Investment Dashboard", "ML Recommendations", "Crypto Assistant"]
+        ["Data Collection", "Investment Dashboard", "ML Recommendations", "Advanced Analytics", "Crypto Assistant"]
     )
     st.session_state['page'] = selected
     
@@ -354,8 +359,15 @@ def main():
         show_dashboard()
     elif st.session_state['page'] == "ML Recommendations":
         show_visualizations()
+    elif st.session_state['page'] == "Advanced Analytics":
+        show_advanced_analytics()
     elif st.session_state['page'] == "Crypto Assistant":
         show_chatbot()
+
+def show_advanced_analytics():
+    """Displays the advanced analytics page"""
+    from src.db.advanceVisualization import show_advanced_visualization
+    show_advanced_visualization()
 
 if __name__ == "__main__":
     main()
