@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from src.db.get_connection import get_db_connection
 from src.agents.crypto_agents import CoinAnalysisAgent, InvestmentRationaleAgent, MarketSummaryAgent, enhance_prompt_with_data
+from src.db.query_utils import execute_query
 
 def get_coin_summary(symbol):
     """Get a comprehensive summary of a cryptocurrency from the database"""
@@ -75,10 +76,7 @@ def show_chatbot():
         st.session_state.summary_agent = MarketSummaryAgent()
     
     # Get available symbols from the database
-    conn = get_db_connection()
-    query = "SELECT DISTINCT symbol FROM crypto_prices"
-    symbols_df = pd.read_sql(query, conn)
-    conn.close()
+    symbols_df = execute_query("SELECT DISTINCT symbol FROM crypto_prices")
     
     available_symbols = symbols_df['symbol'].tolist() if not symbols_df.empty else []
     
