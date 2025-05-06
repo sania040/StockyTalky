@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 from db.get_connection import get_db_connection
 from fetch_and_store_crypto import CryptoDataFetcher
+from src.db.query_utils import execute_query, execute_and_commit
 
 def collect_crypto_data(symbols, interval=10, max_rows=100):
     """
@@ -38,9 +39,8 @@ def collect_crypto_data(symbols, interval=10, max_rows=100):
             for symbol in symbols:
                 try:
                     # Check current row count for this symbol
-                    cur = conn.cursor()
-                    cur.execute("SELECT COUNT(*) FROM crypto_prices WHERE symbol = %s", (symbol,))
-                    row_count = cur.fetchone()[0]
+                    result_df = execute_query("SELECT COUNT(*) FROM crypto_prices WHERE symbol = %s", (symbol,))
+                    row_count = result_df.iloc[0, 0]
                     
                     print(f"Fetching data for {symbol}...")
                     api_data = fetcher.fetch_data_for_symbol(symbol)
@@ -48,20 +48,20 @@ def collect_crypto_data(symbols, interval=10, max_rows=100):
                     if row_count >= max_rows:
                         print(f"Row limit reached for {symbol}. Updating oldest record...")
                         # Get the oldest record's ID
-                        cur.execute("""
+                        result_df = execute_query("""
                             SELECT id FROM crypto_prices 
                             WHERE symbol = %s 
                             ORDER BY timestamp ASC 
                             LIMIT 1
                         """, (symbol,))
-                        oldest_id = cur.fetchone()[0]
+                        oldest_id = result_df.iloc[0, 0]
                         
                         # Prepare data for update
                         quote = api_data['data'][symbol]['quote']['USD']
                         ts = time.strftime("%Y-%m-%d %H:%M:%S")
                         
                         # Update the oldest record
-                        cur.execute("""
+                        execute_and_commit("""
                             UPDATE crypto_prices 
                             SET price_usd = %s, 
                                 volume_24h_usd = %s, 
@@ -77,7 +77,6 @@ def collect_crypto_data(symbols, interval=10, max_rows=100):
                             ts,
                             oldest_id
                         ))
-                        conn.commit()
                         print(f"Updated oldest record for {symbol}")
                     else:
                         print(f"Storing new data for {symbol}...")
@@ -88,7 +87,7 @@ def collect_crypto_data(symbols, interval=10, max_rows=100):
                     print(f"Error processing {symbol}: {e}")
                 finally:
                     if 'cur' in locals():
-                        cur.close()
+                        conn.close()
             
             # Close the connection after processing all symbols
             conn.close()

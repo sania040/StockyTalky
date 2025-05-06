@@ -6,21 +6,19 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from src.db.get_connection import get_db_connection
+from src.db.query_utils import execute_query
 
 def show_visualizations():
     st.title("Crypto Investment Visualizations")
     
     # Fetch data
-    conn = get_db_connection()
-    query = """
+    df = execute_query("""
     SELECT symbol, price_usd, volume_24h_usd, percent_change_24h, 
            market_cap_usd, timestamp 
     FROM crypto_prices 
     ORDER BY timestamp DESC
     LIMIT 2500
-    """
-    df = pd.read_sql(query, conn, parse_dates=['timestamp'])
-    conn.close()
+    """)
     
     if df.empty:
         st.info("No data available. Please collect some data first.")
