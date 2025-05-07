@@ -7,6 +7,7 @@ from src.fetch_and_store_crypto import fetch, store
 from src.eda.crypto_eda import CryptoEDA
 from src.visualizations import show_visualizations
 from src.chatbot import show_chatbot
+from src.db.query_utils import execute_query
 
 # This must be the first Streamlit command
 st.set_page_config(
@@ -42,7 +43,12 @@ def show_data_collection():
     # Your existing data collection code
     st.title("Data Collection")
     
-    symbols = ["BTC", "ETH", "SOL", "XRP", "DOGE", "LTC"]
+    # symbols = ["BTC", "ETH", "SOL", "XRP", "DOGE", "LTC"]
+    symbols_df = execute_query("SELECT DISTINCT symbol FROM crypto_prices")
+    symbols = symbols_df['symbol'].tolist() if not symbols_df.empty else []
+    if not symbols:
+        st.info("No coins found in database. Please fetch and save data first.")
+        return
     sel = st.selectbox("Select Symbol:", symbols)
     
     col1, col2 = st.columns(2)
