@@ -4,7 +4,14 @@ import psycopg2
 from dotenv import load_dotenv
 from datetime import datetime
 from src.db.get_connection import get_db_connection
-
+import streamlit as st
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
+import seaborn as sns
+import matplotlib.pyplot as plt
+from src.db.get_connection import get_db_connection
 # PydanticAI imports
 from pydantic_ai import Agent
 
@@ -79,15 +86,7 @@ def store(api_data: dict, symbol: str) -> str:
     conn.close()
     return "stored" if ok else "failed"
 
-# Add this to app.py or create visualization.py
-import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.express as px
-import plotly.graph_objects as go
-import seaborn as sns
-import matplotlib.pyplot as plt
-from src.db.get_connection import get_db_connection
+
 
 def show_visualizations():
     st.title("Crypto Investment Visualizations")

@@ -96,6 +96,256 @@ def show_chatbot():
     
     # Symbol selection
     col1, col2 = st.columns([3, 1])
+    def get_coin_summary(symbol):
+        """Get a comprehensive summary of a cryptocurrency from the database"""
+        try:
+            conn = get_db_connection()
+            
+            # Get latest data
+            latest_query = f"""
+            SELECT * FROM crypto_prices 
+            WHERE symbol = '{symbol}' 
+            ORDER BY timestamp DESC 
+            LIMIT 1
+            """
+            latest_data = pd.read_sql(latest_query, conn)
+            
+            # Get historical data for trends
+            history_query = f"""
+            SELECT * FROM crypto_prices 
+            WHERE symbol = '{symbol}' 
+            ORDER BY timestamp DESC 
+            LIMIT 30
+            """
+            historical_data = pd.read_sql(history_query, conn)
+            conn.close()
+            
+            if latest_data.empty:
+                return f"No data available for {symbol}."
+                
+            # Calculate trends
+            if len(historical_data) > 1:
+                price_change_7d = ((latest_data['price_usd'].iloc[0] / historical_data['price_usd'].iloc[min(7, len(historical_data)-1)]) - 1) * 100
+                volume_trend = historical_data['volume_24h_usd'].pct_change().mean() * 100
+                volatility = historical_data['price_usd'].pct_change().std() * 100
+            else:
+                price_change_7d = 0
+                volume_trend = 0
+                volatility = 0
+                
+            # Format the summary
+            summary = f"""
+    ## {symbol} Summary
+
+    ### Current Metrics
+    - **Price**: ${latest_data['price_usd'].iloc[0]:,.2f}
+    - **24h Change**: {latest_data['percent_change_24h'].iloc[0]:+.2f}%
+    - **Market Cap**: ${latest_data['market_cap_usd'].iloc[0]/1e9:,.2f} billion
+    - **24h Volume**: ${latest_data['volume_24h_usd'].iloc[0]/1e6:,.2f} million
+
+    ### Trends
+    - **7-Day Change**: {price_change_7d:+.2f}%
+    - **Volume Trend**: {'Increasing' if volume_trend > 0 else 'Decreasing'} ({abs(volume_trend):.2f}%)
+    - **Volatility**: {volatility:.2f}%
+
+    ### Last Updated
+    - {latest_data['timestamp'].iloc[0].strftime('%Y-%m-%d %H:%M:%S')}
+            """
+            return summary
+        except Exception as e:
+            return f"Error retrieving data for {symbol}: {str(e)}"
+
+    def show_chatbot():
+        st.title("StockyTalky Crypto Assistant")
+        
+        # Initialize agents if not already in session state
+        if 'coin_agent' not in st.session_state:
+            st.session_state.coin_agent = CoinAnalysisAgent()
+        if 'rationale_agent' not in st.session_state:
+            st.session_state.rationale_agent = InvestmentRationaleAgent()
+        if 'summary_agent' not in st.session_state:
+            st.session_state.summary_agent = MarketSummaryAgent()
+        
+        # Get available symbols from the database
+        symbols_df = execute_query("SELECT DISTINCT symbol FROM crypto_prices")
+        
+        available_symbols = symbols_df['symbol'].tolist() if not symbols_df.empty else []
+        
+        # Chatbot interface
+        st.markdown("""
+        <div style="background-color:white;color:black;padding:15px;border-radius:10px;margin-bottom:20px;">
+            <h3 style="margin-top:0">Welcome to the Crypto Assistant!</h3>
+            <p>I can help you with:</p>
+            <ul>
+                <li>Coin summaries: "Show me a summary of BTC"</li>
+                <li>Price info: "What's the current price of ETH?"</li>
+                <li>Investment advice: "Should I invest in SOL?"</li>
+                <li>Market trends: "What's happening in the crypto market?"</li>
+            </ul>
+            <p>You can select a default cryptocurrency from the dropdown menu below to focus our conversation.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Symbol selection
+        col1, col2 = st.columns([3, 1])
+        selected_symbol = None # This is the inserted line from $SELECTION_PLACEHOLDER$
+        with col1:
+            # This 'selected_symbol' will hold the symbol chosen from the dropdown.
+            # It might be an empty string if the default "Select a cryptocurrency:" is chosen.
+            selected_symbol = st.selectbox("Select a cryptocurrency:", [""] + available_symbols, 
+                                          index=0, key="symbol_select") 
+        with col2:
+            if selected_symbol and st.button(f"Show {selected_symbol} Summary"):
+                summary = get_coin_summary(selected_symbol)
+                
+                if "messages" not in st.session_state:
+                    st.session_state.messages = []
+                    
+                st.session_state.messages.append({"role": "user", 
+                                                 "content": f"Show me a summary of {selected_symbol}"})
+                st.session_state.messages.append({"role": "assistant", "content": summary})
+                st.rerun()
+        
+        # Chat interface
+        if "messages" not in st.session_state:
+            st.session_state.messages = []
+        
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+        
+        if prompt := st.chat_input("What would you like to know about cryptocurrencies?"):
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            with st.chat_message("user"):
+                st.markdown(prompt)
+            
+            with st.chat_message("assistant"):
+                with st.spinner("Analyzing your question..."):
+                    response = ""
+                    # Determine the active symbol for the query:
+                    # 1. Use selected_symbol from dropdown if it's set (not an empty string).
+                    # 2. Else, try to parse a symbol from the prompt.
+                    active_symbol = selected_symbol if selected_symbol else None 
+                    
+                    if not active_symbol: # If dropdown symbol is empty or None
+                        for sym_from_prompt in available_symbols:
+                            if sym_from_prompt.upper() in prompt.upper():
+                                active_symbol = sym_from_prompt
+                                break
+                    
+                    # Now, process based on keywords and active_symbol
+                    if "summary" in prompt.lower():
+                        if active_symbol:
+                            response = get_coin_summary(active_symbol)
+                        else:
+                            response = "For a summary, please select a cryptocurrency from the dropdown or specify one in your query (e.g., 'summary of BTC')."
+                    
+                    elif "price" in prompt.lower():
+                        if active_symbol:
+                            conn = get_db_connection()
+                            price_query = f"""
+                            SELECT price_usd, timestamp FROM crypto_prices
+                            WHERE symbol = '{active_symbol}'
+                            ORDER BY timestamp DESC
+                            LIMIT 1
+                            """
+                            price_data = pd.read_sql(price_query, conn)
+                            conn.close()
+                            
+                            if not price_data.empty:
+                                price = price_data['price_usd'].iloc[0]
+                                timestamp = price_data['timestamp'].iloc[0]
+                                response = f"The current price of {active_symbol} is **${price:,.2f}** (as of {timestamp})."
+                            else:
+                                response = f"I don't have price data for {active_symbol}."
+                        else:
+                            response = "For price information, please select a cryptocurrency or specify one in your query (e.g., 'price of ETH')."
+
+                    elif any(term in prompt.lower() for term in ["invest", "buy", "sell", "hold", "should i"]):
+                        if active_symbol:
+                            conn = get_db_connection()
+                            data_query = f"""
+                            SELECT * FROM crypto_prices
+                            WHERE symbol = '{active_symbol}'
+                            ORDER BY timestamp DESC
+                            LIMIT 1
+                            """
+                            crypto_data = pd.read_sql(data_query, conn)
+                            conn.close()
+                            
+                            if not crypto_data.empty:
+                                enhanced_prompt_text = f"The user is asking: '{prompt}' about {active_symbol}. Provide investment analysis for {active_symbol}."
+                                enhanced_prompt = enhance_prompt_with_data(
+                                    st.session_state.rationale_agent,
+                                    enhanced_prompt_text,
+                                    crypto_data.iloc[0].to_dict()
+                                )
+                                response = st.session_state.rationale_agent.ask(enhanced_prompt)
+                            else:
+                                response = f"I don't have enough data for {active_symbol} to give investment advice."
+                        else:
+                            response = """
+                            I'd be happy to provide investment analysis, but I need to know which cryptocurrency you're interested in.
+                            Please either:
+                            1. Select a cryptocurrency from the dropdown above, or
+                            2. Specify which cryptocurrency in your question (e.g., "Should I invest in BTC?")
+                            """
+                    
+                    elif any(term in prompt.lower() for term in ["market", "trend", "overview", "happening"]):
+                        response = st.session_state.summary_agent.ask(prompt)
+                    
+                    elif active_symbol: # General query about the active_symbol
+                        conn = get_db_connection()
+                        data_query = f"""
+                        SELECT * FROM crypto_prices
+                        WHERE symbol = '{active_symbol}'
+                        ORDER BY timestamp DESC
+                        LIMIT 1
+                        """
+                        crypto_data = pd.read_sql(data_query, conn)
+                        conn.close()
+                        
+                        if not crypto_data.empty:
+                            enhanced_prompt_text = f"General query about {active_symbol}: {prompt}"
+                            enhanced_prompt = enhance_prompt_with_data(
+                                st.session_state.coin_agent,
+                                enhanced_prompt_text,
+                                crypto_data.iloc[0].to_dict()
+                            )
+                            response = st.session_state.coin_agent.ask(enhanced_prompt)
+                        else:
+                            response = f"I don't have enough data for {active_symbol} to provide analysis for your query: '{prompt}'."
+                    
+                    elif any(greeting in prompt.lower() for greeting in ["hello", "hi", "hey", "greetings"]):
+                        response = """
+                        Hello! I'm your Crypto Assistant. I can help you with:
+                        
+                        - Summaries of cryptocurrencies
+                        - Current price information
+                        - Investment recommendations
+                        - Market trends and analysis
+                        
+                        Try asking about a specific cryptocurrency like "Tell me about BTC" or "Should I invest in ETH?"
+                        You can also select a coin from the dropdown menu to set a default context.
+                        """
+                    
+                    else: # Fallback if no specific category or symbol identified
+                        response = st.session_state.coin_agent.ask(prompt)
+                        # If the agent's response is generic or asks for a symbol, it might be because no context was found.
+                        # Consider adding a more specific fallback if the agent's response is too vague:
+                        # if "which cryptocurrency" in response.lower() or "what coin" in response.lower():
+                        #    response = "I'm not sure which cryptocurrency you're referring to. Please select one from the dropdown or specify it in your question."
+
+                    st.markdown(response)
+            
+            st.session_state.messages.append({"role": "assistant", "content": response})
+        
+        if st.button("Clear Chat History"):
+            st.session_state.messages = []
+            st.session_state.coin_agent.reset_conversation()
+            st.session_state.rationale_agent.reset_conversation()
+            st.session_state.summary_agent.reset_conversation()
+            st.rerun()
     with col1:
         selected_symbol = st.selectbox("Select a cryptocurrency:", [""] + available_symbols, 
                                       index=0, key="symbol_select")
