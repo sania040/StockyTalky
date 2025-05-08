@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 from src.db.get_connection import get_db_connection
 # PydanticAI imports
 from pydantic_ai import Agent
+# from app import load_css
+# from app import show_data_collection, show_dashboard
 
 load_dotenv()
 API_KEY = os.getenv("COINMARKETCAP_API_KEY")
@@ -235,20 +237,19 @@ def show_visualizations():
         </div>
         """, unsafe_allow_html=True)
 
-# Add this to your main app.py
 # In the sidebar navigation or main layout
-if __name__ == "__main__":
-    st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", ["Data Collection", "Visualizations", "Dashboard"])
+# if __name__ == "__main__":
+#     st.sidebar.title("Navigation")
+#     page = st.sidebar.radio("Go to", ["Data Collection", "Visualizations", "Dashboard"])
     
-    load_css()  # Your existing CSS function
+#     load_css()  # Your existing CSS function
     
-    if page == "Data Collection":
-        show_data_collection()  # Your existing function
-    elif page == "Visualizations":
-        show_visualizations()  # Our new function
-    elif page == "Dashboard":
-        show_dashboard()  # Your existing function
+#     if page == "Data Collection":
+#         show_data_collection()  # Your existing function
+#     elif page == "Visualizations":
+#         show_visualizations()  # Our new function
+#     elif page == "Dashboard":
+#         show_dashboard()  # Your existing function
 
 # Expose
 __all__ = ["agent", "fetch", "store", "CryptoDataFetcher"]
