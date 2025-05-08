@@ -7,7 +7,6 @@ from plotly.subplots import make_subplots
 from datetime import datetime, timedelta
 import time
 
-# Define the function at the top of the file
 def show_advanced_visualization():
     """
     Function to be called from main app.py to display the advanced visualization dashboard
@@ -17,49 +16,38 @@ def show_advanced_visualization():
         # Apply custom CSS for better styling
         st.markdown("""
         <style>
-            .main {
-                background-color: #f5f7f9;
-            }
-            .stApp {
-                max-width: 1200px;
-                margin: 0 auto;
-            }
-            .stTabs [data-baseweb="tab-list"] {
-                gap: 24px;
-            }
+            .main { background-color: #f5f7f9; }
+            .stApp { max-width: 1200px; margin: 0 auto; }
+            .stTabs [data-baseweb="tab-list"] { gap: 24px; }
             .stTabs [data-baseweb="tab"] {
                 height: 50px;
                 white-space: pre-wrap;
                 background-color: #ffffff;
                 border-radius: 4px 4px 0px 0px;
                 gap: 1px;
-                padding-top: 10px;
-                padding-bottom: 10px;
+                pAddeding-top: 10px;
+                pAddeding-bottom: 10px;
             }
             .stTabs [aria-selected="true"] {
                 background-color: #4CAF50;
                 color: white;
             }
-            div.block-container {
-                padding-top: 2rem;
-            }
-            h1, h2, h3 {
-                color: #1E3A8A;
-            }
+            div.block-container { pAddeding-top: 2rem; }
+            h1, h2, h3 { color: #1E3A8A; }
             .metric-card {
                 background-color: white;
                 border-radius: 10px;
-                padding: 20px;
+                pAddeding: 20px;
                 box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             }
             .crypto-header {
                 background: linear-gradient(90deg, #1E3A8A 0%, #3B82F6 100%);
-                padding: 20px;
+                pAddeding: 20px;
                 border-radius: 10px;
-                color: #FFFFFF; /* Changed to white for better contrast */
+                color: #FFFFFF;
                 margin-bottom: 20px;
                 text-align: center;
-                font-weight: bold; /* Added for better visibility */
+                font-weight: bold;
             }
         </style>
         """, unsafe_allow_html=True)
@@ -73,56 +61,44 @@ def show_advanced_visualization():
         )
         st.markdown("""
         <style>
-            .main {
-                background-color: #f5f7f9;
-            }
-            .stApp {
-                max-width: 1200px;
-                margin: 0 auto;
-            }
-            .stTabs [data-baseweb="tab-list"] {
-                gap: 24px;
-            }
+            .main { background-color: #f5f7f9; }
+            .stApp { max-width: 1200px; margin: 0 auto; }
+            .stTabs [data-baseweb="tab-list"] { gap: 24px; }
             .stTabs [data-baseweb="tab"] {
                 height: 50px;
                 white-space: pre-wrap;
                 background-color: #ffffff;
                 border-radius: 4px 4px 0px 0px;
                 gap: 1px;
-                padding-top: 10px;
-                padding-bottom: 10px;
+                pAddeding-top: 10px;
+                pAddeding-bottom: 10px;
                 color: black;
             }
             .stTabs [aria-selected="true"] {
                 background-color: #4CAF50;
                 color: white;
             }
-            div.block-container {
-                padding-top: 2rem;
-            }
-            h1, h2, h3 {
-                color: #1E3A8A;
-            }
+            div.block-container { pAddeding-top: 2rem; }
+            h1, h2, h3 { color: #1E3A8A; }
             .metric-card {
                 background-color: white;
                 color:black;
                 border-radius: 10px;
-                padding: 20px;
+                pAddeding: 20px;
                 box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             }
             .crypto-header {
                 background: linear-gradient(90deg, #1E3A8A 0%, #3B82F6 100%);
-                padding: 20px;
+                pAddeding: 20px;
                 border-radius: 10px;
-                color: #FFFFFF; /* Changed to white for better contrast */
+                color: #FFFFFF;
                 margin-bottom: 20px;
                 text-align: center;
-                font-weight: bold; /* Added for better visibility */
+                font-weight: bold;
             }
         </style>
         """, unsafe_allow_html=True)
     
-    # Rest of your code goes here
     # Function to load data from database
     @st.cache_data(ttl=3600)  # Cache data for 1 hour
     def load_data():
@@ -141,15 +117,14 @@ def show_advanced_visualization():
             """)
             
             if df.empty:
-                # Fallback to sample data if no data in database
                 st.warning("No data found in database. Using sample data for demonstration.")
                 return create_sample_data()
                 
-            # Calculate additional metrics
+            # Calculating Addeditional metrics
             df['timestamp'] = pd.to_datetime(df['timestamp'])
             df = df.sort_values(['symbol', 'timestamp'])
             
-            # Add moving averages
+            # Added moving averages
             for symbol in df['symbol'].unique():
                 symbol_data = df[df['symbol'] == symbol].copy()
                 df.loc[df['symbol'] == symbol, 'MA7'] = symbol_data['price_usd'].rolling(window=7).mean()
@@ -158,13 +133,10 @@ def show_advanced_visualization():
             return df
         except Exception as e:
             st.error(f"Error loading data from database: {str(e)}")
-            # Fallback to sample data
             return create_sample_data()
     
     # Function to create sample data (fallback if database fails)
     def create_sample_data():
-        # Your existing sample data creation code here
-        # ... [Keep all the existing code]
         dates = pd.date_range(start='2023-01-01', end='2023-12-31', freq='D')
         
         np.random.seed(42)
@@ -178,7 +150,7 @@ def show_advanced_visualization():
             'timestamp': dates
         }
         
-        # Create data for a few different coins
+        # Create data for different coins
         coins = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP']
         all_data = []
         
@@ -204,11 +176,11 @@ def show_advanced_visualization():
         df['price_usd'] = df['price_usd'].abs() + 100  # Ensure prices are positive
         df['market_cap_usd'] = df['market_cap_usd'].abs() + 1000000000  # Ensure market caps are positive
         
-        # Calculate additional metrics
+        # Calculating Addeditional metrics
         df['timestamp'] = pd.to_datetime(df['timestamp'])
         df = df.sort_values(['symbol', 'timestamp'])
         
-        # Add moving averages
+        # Added moving averages
         for symbol in df['symbol'].unique():
             symbol_data = df[df['symbol'] == symbol].copy()
             df.loc[df['symbol'] == symbol, 'MA7'] = symbol_data['price_usd'].rolling(window=7).mean()
@@ -216,7 +188,6 @@ def show_advanced_visualization():
         
         return df
     
-    # Continue with the rest of your code
     # Load the data
     df = load_data()
     
@@ -232,9 +203,6 @@ def show_advanced_visualization():
     
     # Header section
     st.markdown("<div class='crypto-header'><h1 style='color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);'>🚀 Crypto Investment Analysis Dashboard</h1></div>", unsafe_allow_html=True)
-    
-    # All your remaining code goes here
-    # [Keep all the existing code]
     
     # Sidebar for filters
     st.sidebar.header("Filters")
@@ -273,7 +241,7 @@ def show_advanced_visualization():
         # Get the most recent data for the selected coin
         latest_data = filtered_df.iloc[-1]
         
-        # Calculate metrics
+        # Calculating metrics
         price_change = filtered_df['percentage24hours'].iloc[-1]
         price_color = "green" if price_change >= 0 else "red"
         price_icon = "↗" if price_change >= 0 else "↘"
@@ -311,7 +279,7 @@ def show_advanced_visualization():
         # Create a figure with secondary y-axis
         fig = make_subplots(specs=[[{"secondary_y": True}]])
         
-        # Add price line
+        # Added price line
         fig.add_trace(
             go.Scatter(
                 x=filtered_df['timestamp'],
@@ -322,7 +290,7 @@ def show_advanced_visualization():
             secondary_y=False
         )
         
-        # Add volume bars
+        # Added volume bars
         fig.add_trace(
             go.Bar(
                 x=filtered_df['timestamp'],
@@ -333,7 +301,7 @@ def show_advanced_visualization():
             secondary_y=True
         )
         
-        # Add titles and layout
+        # Added titles and layout
         fig.update_layout(
             title_text=f"{selected_coin} Price and Volume Trends",
             template="plotly_white",
@@ -348,11 +316,16 @@ def show_advanced_visualization():
         
         st.plotly_chart(fig, use_container_width=True)
         
-        # Add market dominance chart if comparing
+        # Added market dominance chart if comparing
         if compare_enabled and comparison_coins:
             st.subheader("Market Comparison")
             compare_coins = [selected_coin] + comparison_coins
-            market_cap_df = df[df['symbol'].isin(compare_coins) & (df['timestamp'] == df['timestamp'].max())]
+            market_cap_df = (
+                df[df['symbol'].isin(compare_coins)]
+                .sort_values(['symbol', 'timestamp'])
+                .groupby('symbol', as_index=False)
+                .last()
+            )
             
             fig = px.pie(
                 market_cap_df,
@@ -373,7 +346,7 @@ def show_advanced_visualization():
         
         fig = go.Figure()
         
-        # Add price line
+        # Added price line
         fig.add_trace(
             go.Scatter(
                 x=filtered_df['timestamp'],
@@ -383,7 +356,7 @@ def show_advanced_visualization():
             )
         )
         
-        # Add moving averages if selected
+        # Added moving averages if selected
         if show_moving_averages:
             fig.add_trace(
                 go.Scatter(
@@ -403,7 +376,7 @@ def show_advanced_visualization():
                 )
             )
         
-        # Add comparison coins if selected
+        # Added comparison coins if selected
         if compare_enabled and comparison_coins:
             for coin in comparison_coins:
                 compare_df = df[(df['symbol'] == coin) & (df['timestamp'] >= start_date)]
@@ -439,14 +412,13 @@ def show_advanced_visualization():
         # Daily returns analysis
         st.subheader("Daily Returns Distribution")
         
-        # Calculate daily returns
+        # Calculating daily returns
         for symbol in df['symbol'].unique():
             symbol_data = df[df['symbol'] == symbol].copy()
             df.loc[df['symbol'] == symbol, 'daily_return'] = symbol_data['price_usd'].pct_change() * 100
 
-        # Calculate daily returns for filtered_df too (add this line)
+        # Calculating daily returns for filtered_df
         filtered_df['daily_return'] = filtered_df['price_usd'].pct_change() * 100
-
         filtered_returns = filtered_df['daily_return'].dropna()
         
         # Create histogram of daily returns
@@ -464,7 +436,7 @@ def show_advanced_visualization():
             showlegend=False
         )
         
-        # Add vertical line at 0
+        # Added vertical line at 0
         fig.add_vline(x=0, line_width=2, line_dash="dash", line_color="red")
         
         st.plotly_chart(fig, use_container_width=True)
@@ -508,7 +480,7 @@ def show_advanced_visualization():
         
         fig = go.Figure()
         
-        # Add market cap line
+        # Added market cap line
         fig.add_trace(
             go.Scatter(
                 x=filtered_df['timestamp'],
@@ -520,7 +492,7 @@ def show_advanced_visualization():
             )
         )
         
-        # Add comparison coins if selected
+        # Added comparison coins if selected
         if compare_enabled and comparison_coins:
             for coin in comparison_coins:
                 compare_df = df[(df['symbol'] == coin) & (df['timestamp'] >= start_date)]
@@ -550,7 +522,7 @@ def show_advanced_visualization():
         # Volume Analysis
         st.subheader("Trading Volume Analysis")
         
-        # Calculate average daily volume
+        # Calculating average daily volume
         avg_volume = filtered_df['volume24_hours'].mean()
         
         col1, col2 = st.columns(2)
@@ -580,7 +552,7 @@ def show_advanced_visualization():
             color_discrete_sequence=['#4CAF50']
         )
         
-        # Add 7-day moving average for volume
+        # Added 7-day moving average for volume
         filtered_df['volume_ma7'] = filtered_df['volume24_hours'].rolling(window=7).mean()
         
         fig.add_trace(
@@ -606,24 +578,17 @@ def show_advanced_visualization():
     with tab4:
         st.header("Technical Analysis")
         
-        # Calculate technical indicators
+        # Calculating technical indicators
         df_tech = filtered_df.copy()
         
-        # Calculate daily returns
+        # Calculating daily returns
         df_tech['daily_return'] = df_tech.groupby('symbol')['price_usd'].pct_change()
-        # Replace any NaN values that might come from the first row
         df_tech['daily_return'] = df_tech['daily_return'].fillna(0)
-        # Handle any places where this column is used with a safe check
-        # For example, when accessing statistics about daily returns:
         
-        # Before using daily_return, check if it exists
-        if 'daily_return' not in df_tech.columns:
-            df_tech['daily_return'] = df_tech.groupby('symbol')['price_usd'].pct_change()
-        
-        # When accessing statistics like volatility
-        volatility = df_tech['daily_return'].std() * (252 ** 0.5)  # Annualized volatility
+        # Calculating annualized volatility
+        volatility = df_tech['daily_return'].std() * (252 ** 0.5)
 
-        # Calculate RSI (Relative Strength Index)
+        # Calculating RSI (Relative Strength Index)
         delta = df_tech['price_usd'].diff()
         gain = delta.where(delta > 0, 0)
         loss = -delta.where(delta < 0, 0)
@@ -634,14 +599,14 @@ def show_advanced_visualization():
         rs = avg_gain / avg_loss
         df_tech['RSI'] = 100 - (100 / (1 + rs))
         
-        # Calculate MACD (Moving Average Convergence Divergence)
+        # Calculating MACD (Moving Average Convergence Divergence)
         df_tech['EMA12'] = df_tech['price_usd'].ewm(span=12, adjust=False).mean()
         df_tech['EMA26'] = df_tech['price_usd'].ewm(span=26, adjust=False).mean()
         df_tech['MACD'] = df_tech['EMA12'] - df_tech['EMA26']
         df_tech['Signal'] = df_tech['MACD'].ewm(span=9, adjust=False).mean()
         df_tech['MACD_Histogram'] = df_tech['MACD'] - df_tech['Signal']
         
-        # Calculate Bollinger Bands
+        # Calculating Bollinger Bands
         df_tech['MA20'] = df_tech['price_usd'].rolling(window=20).mean()
         df_tech['std20'] = df_tech['price_usd'].rolling(window=20).std()
         df_tech['Upper_Band'] = df_tech['MA20'] + (df_tech['std20'] * 2)
@@ -661,7 +626,7 @@ def show_advanced_visualization():
             )
         )
         
-        # Add horizontal lines at 30 and 70
+        # Added horizontal lines at 30 and 70
         fig.add_hline(y=30, line_width=1, line_dash="dash", line_color="green", annotation_text="Oversold")
         fig.add_hline(y=70, line_width=1, line_dash="dash", line_color="red", annotation_text="Overbought")
         
@@ -680,7 +645,7 @@ def show_advanced_visualization():
         
         fig = make_subplots(specs=[[{"secondary_y": True}]])
         
-        # Add MACD and Signal lines
+        # Added MACD and Signal lines
         fig.add_trace(
             go.Scatter(
                 x=df_tech['timestamp'],
@@ -699,7 +664,7 @@ def show_advanced_visualization():
             )
         )
         
-        # Add histogram
+        # Added histogram
         colors = ['green' if val >= 0 else 'red' for val in df_tech['MACD_Histogram']]
         
         fig.add_trace(
@@ -731,7 +696,7 @@ def show_advanced_visualization():
         
         fig = go.Figure()
         
-        # Add price line
+        # Added price line
         fig.add_trace(
             go.Scatter(
                 x=df_tech['timestamp'],
@@ -741,7 +706,7 @@ def show_advanced_visualization():
             )
         )
         
-        # Add Bollinger Bands
+        # Added Bollinger Bands
         fig.add_trace(
             go.Scatter(
                 x=df_tech['timestamp'],
@@ -782,14 +747,14 @@ def show_advanced_visualization():
         
         st.plotly_chart(fig, use_container_width=True)
     
-    # Add footnote
+    # Addeded footnote
     st.markdown("""
     ---
     ⚠️ **Disclaimer**: This application is for informational purposes only and should not be considered financial advice. 
     Cryptocurrency investments are subject to market risks. Always do your own research before investing.
     """)
     
-    # Add a "Buy/Sell Signal" feature
+    # Addeded a "Buy/Sell Signal" feature
     st.sidebar.subheader("Investment Signal")
     
     # Simulate a buy/sell signal based on technical indicators
@@ -800,7 +765,7 @@ def show_advanced_visualization():
     upper_band = df_tech['Upper_Band'].iloc[-1] if not df_tech['Upper_Band'].isna().all() else price * 1.05
     lower_band = df_tech['Lower_Band'].iloc[-1] if not df_tech['Lower_Band'].isna().all() else price * 0.95
     
-    # Calculate a simple signal
+    # Calculating a simple signal
     buy_signals = 0
     sell_signals = 0
     
@@ -826,7 +791,7 @@ def show_advanced_visualization():
     if buy_signals > sell_signals:
         signal_strength = min(100, buy_signals * 33)
         st.sidebar.markdown(f"""
-        <div style="background-color: rgba(0, 128, 0, 0.2); border-radius: 10px; padding: 10px; text-align: center;">
+        <div style="background-color: rgba(0, 128, 0, 0.2); border-radius: 10px; pAddeding: 10px; text-align: center;">
             <h3 style="color: green;">BUY Signal</h3>
             <p>Strength: {signal_strength}%</p>
             <p>Technical indicators suggest a buying opportunity.</p>
@@ -835,7 +800,7 @@ def show_advanced_visualization():
     elif sell_signals > buy_signals:
         signal_strength = min(100, sell_signals * 33)
         st.sidebar.markdown(f"""
-        <div style="background-color: rgba(255, 0, 0, 0.2); border-radius: 10px; padding: 10px; text-align: center;">
+        <div style="background-color: rgba(255, 0, 0, 0.2); border-radius: 10px; pAddeding: 10px; text-align: center;">
             <h3 style="color: red;">SELL Signal</h3>
             <p>Strength: {signal_strength}%</p>
             <p>Technical indicators suggest a selling opportunity.</p>
@@ -843,13 +808,13 @@ def show_advanced_visualization():
         """, unsafe_allow_html=True)
     else:
         st.sidebar.markdown(f"""
-        <div style="background-color: rgba(255, 165, 0, 0.2); border-radius: 10px; padding: 10px; text-align: center;">
+        <div style="background-color: rgba(255, 165, 0, 0.2); border-radius: 10px; pAddeding: 10px; text-align: center;">
             <h3 style="color: orange;">HOLD Signal</h3>
             <p>Technical indicators are neutral.</p>
         </div>
         """, unsafe_allow_html=True)
     
-    # Add simple refresh button
+    # Addeded simple refresh button
     if st.sidebar.button("Refresh Data"):
         try:
             # Clear cached data to force a refresh
@@ -858,7 +823,7 @@ def show_advanced_visualization():
         except:
             st.sidebar.warning("Refresh failed. Please try again.")
     
-    # Add last updated timestamp
+    # Addeded last updated timestamp
     st.sidebar.markdown(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
 # Make the script runnable both directly and as an imported module
