@@ -30,12 +30,13 @@ def show_advanced_visualization():
             }
             .stTabs [aria-selected="true"] {
                 background-color: #4CAF50;
-                color: white;
+                color: black;
             }
             div.block-container { pAddeding-top: 2rem; }
             h1, h2, h3 { color: #1E3A8A; }
             .metric-card {
                 background-color: white;
+                color:black;
                 border-radius: 10px;
                 pAddeding: 20px;
                 box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -44,7 +45,7 @@ def show_advanced_visualization():
                 background: linear-gradient(90deg, #1E3A8A 0%, #3B82F6 100%);
                 pAddeding: 20px;
                 border-radius: 10px;
-                color: #FFFFFF;
+                color: black;
                 margin-bottom: 20px;
                 text-align: center;
                 font-weight: bold;
@@ -218,6 +219,10 @@ def show_advanced_visualization():
     # Advanced filters
     st.sidebar.subheader("Advanced Filters")
     show_moving_averages = st.sidebar.checkbox("Show Moving Averages", value=True)
+    timeframe = st.sidebar.selectbox("Timeframe", ["1D", "12H", "4H", "1H"], index=0)
+    chart_type = st.sidebar.radio("Chart Type", ["Candlestick", "Line"], index=0)
+    use_log = st.sidebar.checkbox("Log scale (price)", value=False)
+    show_signals = st.sidebar.checkbox("Show MA Cross Signals", value=True)
     
     # Comparison settings
     st.sidebar.subheader("Comparison")
@@ -239,6 +244,11 @@ def show_advanced_visualization():
         st.header(f"{selected_coin} Overview")
         
         # Get the most recent data for the selected coin
+        if filtered_df.empty:
+            st.info(f"No data available for {selected_coin}.")
+            return
+        # ensure chronological order then pick the latest row
+        filtered_df = filtered_df.sort_values('timestamp')
         latest_data = filtered_df.iloc[-1]
         
         # Calculating metrics
@@ -341,135 +351,142 @@ def show_advanced_visualization():
     with tab2:
         st.header("Price Analysis")
         
-        # Price chart
-        st.subheader(f"{selected_coin} Price Chart")
+        # Build a trading-style chart
+        work = filtered_df.sort_values("timestamp").copy()
+        work.set_index("timestamp", inplace=True)
+        rule_map = {"1D": "1D", "12H": "12H", "4H": "4H", "1H": "1H"}
+        rule = rule_map.get(timeframe, "1D")
+        ohlc = work["price_usd"].resample(rule).ohlc().dropna()
+        vol = work["volume24_hours"].resample(rule).mean().reindex(ohlc.index).fillna(method="ffill")
+        close = ohlc["close"]
         
-        fig = go.Figure()
+        ema20 = close.ewm(span=20, adjust=False).mean()
+        ema50 = close.ewm(span=50, adjust=False).mean()
+        bb_mid = close.rolling(20).mean()
+        bb_std = close.rolling(20).std()
+        bb_upper = bb_mid + 2 * bb_std
+        bb_lower = bb_mid - 2 * bb_std
         
-        # Added price line
-        fig.add_trace(
-            go.Scatter(
-                x=filtered_df['timestamp'],
-                y=filtered_df['price_usd'],
-                name="Price (USD)",
-                line=dict(color="#3B82F6", width=3)
+        delta = close.diff()
+        gain = delta.clip(lower=0)
+        loss = -delta.clip(upper=0)
+        rsi = 100 - (100 / (1 + (gain.rolling(14).mean() / loss.rolling(14).mean())))
+        
+        ema12 = close.ewm(span=12, adjust=False).mean()
+        ema26 = close.ewm(span=26, adjust=False).mean()
+        macd = ema12 - ema26
+        macd_signal = macd.ewm(span=9, adjust=False).mean()
+        macd_hist = macd - macd_signal
+        
+        if chart_type == "Candlestick":
+            fig = make_subplots(
+                rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.03,
+                row_heights=[0.6, 0.2, 0.2], specs=[[{"secondary_y": True}], [{"type": "xy"}], [{"type": "xy"}]]
             )
-        )
-        
-        # Added moving averages if selected
-        if show_moving_averages:
-            fig.add_trace(
-                go.Scatter(
-                    x=filtered_df['timestamp'],
-                    y=filtered_df['MA7'],
-                    name="7-Day MA",
-                    line=dict(color="#10B981", width=1.5, dash='dot')
-                )
-            )
-            
-            fig.add_trace(
-                go.Scatter(
-                    x=filtered_df['timestamp'],
-                    y=filtered_df['MA30'],
-                    name="30-Day MA",
-                    line=dict(color="#F59E0B", width=1.5, dash='dot')
-                )
-            )
-        
-        # Added comparison coins if selected
-        if compare_enabled and comparison_coins:
-            for coin in comparison_coins:
-                compare_df = df[(df['symbol'] == coin) & (df['timestamp'] >= start_date)]
-                
-                # Normalize prices for comparison (starting from same point)
-                first_price = compare_df['price_usd'].iloc[0]
-                first_selected_price = filtered_df['price_usd'].iloc[0]
-                normalized_prices = compare_df['price_usd'] * (first_selected_price / first_price)
-                
-                fig.add_trace(
-                    go.Scatter(
-                        x=compare_df['timestamp'],
-                        y=normalized_prices,
-                        name=f"{coin} (Normalized)",
-                        line=dict(width=1.5, dash='solid'),
-                        opacity=0.7
-                    )
-                )
-        
-        # Update layout
-        fig.update_layout(
-            title_text=f"{selected_coin} Price Evolution",
-            template="plotly_white",
-            hovermode="x unified",
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-            height=500,
-            xaxis_title="Date",
-            yaxis_title="Price (USD)"
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # Daily returns analysis
-        st.subheader("Daily Returns Distribution")
-        
-        # Calculating daily returns
-        for symbol in df['symbol'].unique():
-            symbol_data = df[df['symbol'] == symbol].copy()
-            df.loc[df['symbol'] == symbol, 'daily_return'] = symbol_data['price_usd'].pct_change() * 100
-
-        # Calculating daily returns for filtered_df
-        filtered_df['daily_return'] = filtered_df['price_usd'].pct_change() * 100
-        filtered_returns = filtered_df['daily_return'].dropna()
-        
-        # Create histogram of daily returns
-        fig = px.histogram(
-            filtered_returns,
-            title=f"{selected_coin} Daily Returns Distribution",
-            labels={'value': 'Daily Return (%)'},
-            color_discrete_sequence=['#3B82F6'],
-            nbins=30
-        )
-        
-        fig.update_layout(
-            template="plotly_white",
-            height=400,
-            showlegend=False
-        )
-        
-        # Added vertical line at 0
-        fig.add_vline(x=0, line_width=2, line_dash="dash", line_color="red")
-        
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # Volatility comparison if comparing coins
-        if compare_enabled and comparison_coins:
-            st.subheader("Volatility Comparison")
-            
-            volatility_data = []
-            for coin in [selected_coin] + comparison_coins:
-                coin_df = df[(df['symbol'] == coin) & (df['timestamp'] >= start_date)]
-                volatility = coin_df['daily_return'].std()
-                volatility_data.append({'symbol': coin, 'volatility': volatility})
-            
-            volatility_df = pd.DataFrame(volatility_data)
-            
-            fig = px.bar(
-                volatility_df,
-                x='symbol',
-                y='volatility',
-                title='Volatility Comparison (Standard Deviation of Daily Returns)',
-                color='symbol',
-                color_discrete_sequence=px.colors.qualitative.Bold
-            )
-            
+            # Build custom hover text for compatibility
+            hover_text = [
+                f"<b>{ts:%Y-%m-%d %H:%M}</b><br>O {o:.2f}<br>H {h:.2f}<br>L {l:.2f}<br>C {c:.2f}"
+                for ts, o, h, l, c in zip(ohlc.index, ohlc['open'], ohlc['high'], ohlc['low'], ohlc['close'])
+            ]
+            fig.add_trace(go.Candlestick(
+                x=ohlc.index, open=ohlc["open"], high=ohlc["high"], low=ohlc["low"], close=ohlc["close"],
+                name="OHLC", increasing_line_color="#16a34a", decreasing_line_color="#ef4444",
+                text=hover_text, hoverinfo="text"
+             ), row=1, col=1, secondary_y=False)
+            fig.add_trace(go.Bar(
+                x=ohlc.index, y=vol, name="Volume", marker_color="rgba(59,130,246,0.35)"
+            ), row=1, col=1, secondary_y=True)
+            if show_moving_averages:
+                fig.add_trace(go.Scatter(x=ohlc.index, y=ema20, name="EMA 20", line=dict(color="#10B981", width=1.5)), row=1, col=1)
+                fig.add_trace(go.Scatter(x=ohlc.index, y=ema50, name="EMA 50", line=dict(color="#F59E0B", width=1.5)), row=1, col=1)
+                fig.add_trace(go.Scatter(x=ohlc.index, y=bb_upper, name="BB Upper", line=dict(color="#EC4899", width=1, dash="dash")), row=1, col=1)
+                fig.add_trace(go.Scatter(x=ohlc.index, y=bb_mid, name="BB Mid", line=dict(color="#6b7280", width=1, dash="dot")), row=1, col=1)
+                fig.add_trace(go.Scatter(x=ohlc.index, y=bb_lower, name="BB Lower", line=dict(color="#EC4899", width=1, dash="dash"), fill="tonexty", fillcolor="rgba(236,72,153,0.08)"), row=1, col=1)
+            if show_signals:
+                cross_up = (ema20.shift(1) < ema50.shift(1)) & (ema20 >= ema50)
+                cross_dn = (ema20.shift(1) > ema50.shift(1)) & (ema20 <= ema50)
+                fig.add_trace(go.Scatter(
+                    x=ohlc.index[cross_up], y=close[cross_up], mode="markers", name="Buy",
+                    marker=dict(symbol="triangle-up", size=10, color="#16a34a")
+                ), row=1, col=1)
+                fig.add_trace(go.Scatter(
+                    x=ohlc.index[cross_dn], y=close[cross_dn], mode="markers", name="Sell",
+                    marker=dict(symbol="triangle-down", size=10, color="#ef4444")
+                ), row=1, col=1)
+            fig.add_trace(go.Scatter(x=ohlc.index, y=rsi, name="RSI", line=dict(color="#FF6B6B", width=2)), row=2, col=1)
+            # Horizontal RSI guides (compatible with older Plotly)
+            fig.add_trace(go.Scatter(x=ohlc.index, y=pd.Series(70, index=ohlc.index), showlegend=False,
+                                     line=dict(color="red", dash="dash")), row=2, col=1)
+            fig.add_trace(go.Scatter(x=ohlc.index, y=pd.Series(30, index=ohlc.index), showlegend=False,
+                                     line=dict(color="green", dash="dash")), row=2, col=1)
+            fig.add_trace(go.Scatter(x=ohlc.index, y=macd, name="MACD", line=dict(color="#4CAF50", width=2)), row=3, col=1)
+            fig.add_trace(go.Scatter(x=ohlc.index, y=macd_signal, name="Signal", line=dict(color="#FF9800", width=2)), row=3, col=1)
+            fig.add_trace(go.Bar(x=ohlc.index, y=macd_hist, name="Histogram", marker_color=["#16a34a" if v >= 0 else "#ef4444" for v in macd_hist]), row=3, col=1)
+            fig.update_yaxes(title_text="Price (USD)", row=1, col=1, type="log" if use_log else "linear")
+            fig.update_yaxes(title_text="Volume", row=1, col=1, secondary_y=True)
+            fig.update_yaxes(title_text="RSI", row=2, col=1, range=[0, 100])
+            fig.update_yaxes(title_text="MACD", row=3, col=1)
             fig.update_layout(
-                template="plotly_white",
-                height=400,
-                showlegend=False,
-                xaxis_title="Cryptocurrency",
-                yaxis_title="Volatility (%)"
+                 title_text=f"{selected_coin} Trading View ({timeframe})",
+                 template="plotly_white", hovermode="x unified",
+                 legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                 height=900, margin=dict(l=10, r=10, t=50, b=10),
+                 xaxis=dict(
+                     rangeselector=dict(
+                         buttons=list([
+                             dict(count=7, label="1w", step="day", stepmode="backward"),
+                             dict(count=1, label="1m", step="month", stepmode="backward"),
+                             dict(count=3, label="3m", step="month", stepmode="backward"),
+                             dict(step="all")
+                         ])
+                     ),
+                     rangeslider=dict(visible=True)
+                )
+             )
+            st.plotly_chart(fig, use_container_width=True, config={
+                "modeBarButtonsToAdd": ["drawline", "drawopenpath", "eraseshape"],
+                "displaylogo": False
+            })
+        else:
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=filtered_df['timestamp'], y=filtered_df['price_usd'],
+                name="Price (USD)", line=dict(color="#3B82F6", width=3)
+            ))
+            if show_moving_averages:
+                fig.add_trace(go.Scatter(x=filtered_df['timestamp'], y=filtered_df['MA7'], name="7-Day MA", line=dict(color="#10B981", width=1.5, dash='dot')))
+                fig.add_trace(go.Scatter(x=filtered_df['timestamp'], y=filtered_df['MA30'], name="30-Day MA", line=dict(color="#F59E0B", width=1.5, dash='dot')))
+            if compare_enabled and comparison_coins:
+                for coin in comparison_coins:
+                    compare_df = df[(df['symbol'] == coin) & (df['timestamp'] >= start_date)].sort_values("timestamp")
+                    if compare_df.empty:
+                        continue
+                    base_sel = filtered_df['price_usd'].iloc[0] if not filtered_df.empty else 1
+                    base_cmp = compare_df['price_usd'].iloc[0]
+                    fig.add_trace(go.Scatter(
+                        x=compare_df['timestamp'],
+                        y=compare_df['price_usd'] * (base_sel / base_cmp),
+                        name=f"{coin} (Normalized)", line=dict(width=1.5), opacity=0.7
+                    ))
+            fig.update_layout(
+                title_text=f"{selected_coin} Price Evolution",
+                template="plotly_white", hovermode="x unified",
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                height=550, xaxis_title="Date", yaxis_title="Price (USD)"
             )
-            
+            if use_log:
+                fig.update_yaxes(type="log")
+            fig.update_xaxes(
+                rangeselector=dict(
+                    buttons=list([
+                        dict(count=7, label="1w", step="day", stepmode="backward"),
+                        dict(count=1, label="1m", step="month", stepmode="backward"),
+                        dict(count=3, label="3m", step="month", stepmode="backward"),
+                        dict(step="all")
+                    ])
+                ),
+                rangeslider=dict(visible=True)
+            )
             st.plotly_chart(fig, use_container_width=True)
     
     with tab3:
@@ -808,7 +825,7 @@ def show_advanced_visualization():
         """, unsafe_allow_html=True)
     else:
         st.sidebar.markdown(f"""
-        <div style="background-color: rgba(255, 165, 0, 0.2); border-radius: 10px; pAddeding: 10px; text-align: center;">
+        <div style="background-color: rgba(255,165,0,0.2); border-radius: 10px; pAddeding: 10px; text-align: center;">
             <h3 style="color: orange;">HOLD Signal</h3>
             <p>Technical indicators are neutral.</p>
         </div>
