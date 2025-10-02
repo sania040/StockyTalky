@@ -19,27 +19,24 @@ def show():
         <div class="crypto-header">
             <h1 style="margin:0; color:white;">💬 StockyTalky AI Assistant</h1>
             <p style="margin:5px 0 0 0; color:rgba(255,255,255,0.9);">
-                Your intelligent companion for cryptocurrency analysis and insights
+                Your intelligent companion for cryptocurrency data analysis
             </p>
         </div>
     """, unsafe_allow_html=True)
     
-    # Initialize agents with proper error handling
+    # Initialize agents
     initialize_agents()
     
     # Get available symbols
     symbols_df = execute_query("SELECT DISTINCT symbol FROM crypto_prices ORDER BY symbol")
     available_symbols = symbols_df['symbol'].tolist() if not symbols_df.empty else []
     
-    # Professional welcome section
-    display_welcome_section(available_symbols)
-    
     # Symbol selection with real-time data preview
     selected_symbol = display_symbol_selector(available_symbols)
     
     # Update agent context when symbol changes
     if selected_symbol and selected_symbol != st.session_state.get('last_selected_symbol'):
-        update_agent_context(selected_symbol)
+        update_agent_context_with_history(selected_symbol)
         st.session_state['last_selected_symbol'] = selected_symbol
     
     # Quick action buttons
@@ -49,14 +46,14 @@ def show():
     if "messages" not in st.session_state:
         st.session_state.messages = []
     
-    # Display chat history with professional formatting
+    # Display chat history
     display_chat_history()
     
-    # Chat input with suggestions
+    # Chat input
     handle_chat_input(selected_symbol, available_symbols)
     
-    # Sidebar with helpful information
-    display_sidebar_info(selected_symbol)
+    # Sidebar
+    display_sidebar_info(selected_symbol, available_symbols)
 
 
 def initialize_agents():
@@ -73,32 +70,6 @@ def initialize_agents():
         st.stop()
 
 
-def display_welcome_section(available_symbols: list):
-    """Display professional welcome section"""
-    
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        st.markdown("""
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                    color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-            <h3 style="margin: 0 0 10px 0;">👋 Welcome to Your AI Crypto Advisor</h3>
-            <p style="margin: 0; font-size: 0.95rem; line-height: 1.6;">
-                Get professional analysis, investment insights, and market intelligence 
-                powered by advanced AI. Ask anything about cryptocurrencies!
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        st.metric(
-            "Tracked Assets", 
-            len(available_symbols),
-            delta="Live Data",
-            help="Number of cryptocurrencies with available data"
-        )
-
-
 def display_symbol_selector(available_symbols: list):
     """Display enhanced symbol selector with live data"""
     
@@ -109,7 +80,7 @@ def display_symbol_selector(available_symbols: list):
             "🎯 Select Cryptocurrency for Analysis",
             [""] + available_symbols,
             index=0,
-            help="Choose a cryptocurrency to get context-aware insights"
+            help="Choose a cryptocurrency to analyze its historical data"
         )
     
     with col2:
@@ -182,21 +153,40 @@ def display_live_data_card(symbol: str):
                     help="Trading volume in last 24 hours"
                 )
             
-            # Store in session state for agent context
+            # Store in session state
             st.session_state[f'{symbol}_data'] = data.to_dict()
             
     except Exception as e:
         st.warning(f"Unable to load live data: {str(e)}")
 
 
-def update_agent_context(symbol: str):
-    """Update all agents with selected cryptocurrency context"""
-    crypto_data = st.session_state.get(f'{symbol}_data')
-    
-    if crypto_data:
-        st.session_state.coin_agent.set_context(symbol, crypto_data)
-        st.session_state.rationale_agent.set_context(symbol, crypto_data)
-        st.session_state.summary_agent.set_context(symbol, crypto_data)
+def update_agent_context_with_history(symbol: str):
+    """Update all agents with selected cryptocurrency context INCLUDING historical data"""
+    try:
+        # Get current data
+        crypto_data = st.session_state.get(f'{symbol}_data')
+        
+        # Get historical data
+        historical_query = f"""
+        SELECT symbol, price_usd, percent_change_24h, market_cap_usd, 
+               volume_24h_usd, timestamp
+        FROM crypto_prices
+        WHERE symbol = '{symbol}'
+        ORDER BY timestamp ASC
+        """
+        historical_df = execute_query(historical_query)
+        
+        # Update all agents with both current and historical data
+        if not historical_df.empty:
+            st.session_state.coin_agent.set_context(symbol, crypto_data, historical_df)
+            st.session_state.rationale_agent.set_context(symbol, crypto_data, historical_df)
+            st.session_state.summary_agent.set_context(symbol, crypto_data, historical_df)
+            
+            # Store historical data in session state
+            st.session_state[f'{symbol}_history'] = historical_df
+        
+    except Exception as e:
+        st.warning(f"Could not load historical data: {str(e)}")
 
 
 def display_quick_actions(selected_symbol: str, available_symbols: list):
@@ -206,17 +196,26 @@ def display_quick_actions(selected_symbol: str, available_symbols: list):
     
     col1, col2, col3, col4 = st.columns(4)
     
-    quick_actions = {
-        "col1": ("📊 Analyze", f"Give me a detailed analysis of {selected_symbol or 'Bitcoin'}"),
-        "col2": ("💡 Investment View", f"Should I consider investing in {selected_symbol or 'Ethereum'}?"),
-        "col3": ("📈 Market Trend", "What's the current crypto market sentiment?"),
-        "col4": ("🔍 Compare", "Compare top cryptocurrencies by market cap")
-    }
+    # Define actions with proper structure
+    actions = [
+        ("📊 Analyze Data", f"Analyze the historical data for {selected_symbol or 'Bitcoin'}"),
+        ("💡 Best Entry", f"When was the best time to buy {selected_symbol or 'Ethereum'} based on our data?"),
+        ("📈 Price Trends", f"Show me price trends for {selected_symbol or 'Bitcoin'} in our database"),
+        ("🔍 Compare Highs/Lows", f"Compare {selected_symbol or 'Bitcoin'} current price to historical highs and lows")
+    ]
     
-    for col_name, (label, query) in quick_actions.items():
-        with locals()[col_name]:
-            if st.button(label, use_container_width=True, key=f"quick_{label}"):
-                process_quick_action(query, selected_symbol, available_symbols)
+    columns = [col1, col2, col3, col4]
+    
+    for idx, (col, (label, query)) in enumerate(zip(columns, actions)):
+        with col:
+            if st.button(label, use_container_width=True, key=f"quick_action_{idx}"):
+                st.session_state.messages.append({
+                    "role": "user", 
+                    "content": query,
+                    "timestamp": datetime.now().strftime("%I:%M %p")
+                })
+                st.session_state['pending_query'] = query
+                st.rerun()
 
 
 def display_chat_history():
@@ -224,24 +223,45 @@ def display_chat_history():
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             if message["role"] == "assistant":
-                # Add timestamp to assistant messages
                 timestamp = message.get("timestamp", "")
                 if timestamp:
                     st.caption(f"🕒 {timestamp}")
             st.markdown(message["content"])
+    
+    # Process pending query if exists
+    if 'pending_query' in st.session_state:
+        query = st.session_state['pending_query']
+        del st.session_state['pending_query']
+        
+        # Get selected symbol
+        symbols_df = execute_query("SELECT DISTINCT symbol FROM crypto_prices ORDER BY symbol")
+        available_symbols = symbols_df['symbol'].tolist() if not symbols_df.empty else []
+        selected_symbol = st.session_state.get('last_selected_symbol', '')
+        
+        # Process and display response
+        with st.chat_message("assistant"):
+            with st.spinner("🤔 Analyzing data..."):
+                response = process_query(query, selected_symbol, available_symbols)
+                timestamp = datetime.now().strftime("%I:%M %p")
+                st.caption(f"🕒 {timestamp}")
+                st.markdown(response)
+        
+        st.session_state.messages.append({
+            "role": "assistant", 
+            "content": response,
+            "timestamp": timestamp
+        })
 
 
 def handle_chat_input(selected_symbol: str, available_symbols: list):
     """Handle chat input with intelligent routing"""
     
-    # Provide smart suggestions based on context
     if selected_symbol:
-        placeholder = f"Ask me about {selected_symbol}... (e.g., 'Is {selected_symbol} a good investment?')"
+        placeholder = f"Ask about {selected_symbol} data... (e.g., 'When was the best time to buy {selected_symbol}?')"
     else:
-        placeholder = "Ask me anything about cryptocurrencies..."
+        placeholder = "Ask about cryptocurrency data in our database..."
     
     if prompt := st.chat_input(placeholder):
-        # Add user message
         st.session_state.messages.append({
             "role": "user", 
             "content": prompt,
@@ -251,12 +271,9 @@ def handle_chat_input(selected_symbol: str, available_symbols: list):
         with st.chat_message("user"):
             st.markdown(prompt)
         
-        # Process query with professional response
         with st.chat_message("assistant"):
-            with st.spinner("🤔 Analyzing..."):
+            with st.spinner("🤔 Analyzing data..."):
                 response = process_query(prompt, selected_symbol, available_symbols)
-                
-                # Add timestamp
                 timestamp = datetime.now().strftime("%I:%M %p")
                 st.caption(f"🕒 {timestamp}")
                 st.markdown(response)
@@ -267,32 +284,28 @@ def handle_chat_input(selected_symbol: str, available_symbols: list):
             "timestamp": timestamp
         })
         
-        # Auto-scroll to bottom
         st.rerun()
 
 
 def process_query(prompt: str, selected_symbol: str, available_symbols: list) -> str:
     """Process user query and route to appropriate agent"""
     
-    # Determine active symbol
     active_symbol = selected_symbol if selected_symbol else None
     
-    # Check if user mentioned a specific symbol in their query
     if not active_symbol:
         for sym in available_symbols:
             if sym.upper() in prompt.upper():
                 active_symbol = sym
                 break
     
-    # Route to appropriate agent based on query intent
     prompt_lower = prompt.lower()
     
     # Investment/Trading intent
-    if any(term in prompt_lower for term in ["invest", "buy", "sell", "hold", "trade", "purchase", "should i"]):
+    if any(term in prompt_lower for term in ["invest", "buy", "sell", "hold", "trade", "purchase", "should i", "entry", "best time"]):
         return handle_investment_query(prompt, active_symbol)
     
     # Market overview intent
-    elif any(term in prompt_lower for term in ["market", "trend", "overview", "sentiment", "outlook"]):
+    elif any(term in prompt_lower for term in ["market", "compare", "overview", "sentiment", "all coins"]):
         return handle_market_query(prompt)
     
     # Analysis intent (default)
@@ -312,27 +325,25 @@ def handle_investment_query(prompt: str, symbol: str) -> str:
                 crypto_data
             )
             response = st.session_state.rationale_agent.ask(enhanced_prompt)
-            return format_agent_response(response, "Investment Analyst")
+            return format_agent_response(response, "Investment Data Analyst")
         else:
-            return f"⚠️ No current data available for {symbol}. Please select a cryptocurrency with available data."
+            return f"⚠️ No data available for {symbol}. Please select a cryptocurrency with available data."
     else:
-        return "🎯 **Please select a cryptocurrency** from the dropdown above to get investment insights, or specify one in your question."
+        return "🎯 **Please select a cryptocurrency** from the dropdown above to analyze investment opportunities."
 
 
 def handle_market_query(prompt: str) -> str:
     """Handle market overview queries"""
     response = st.session_state.summary_agent.ask(prompt)
-    return format_agent_response(response, "Market Intelligence")
+    return format_agent_response(response, "Market Data Intelligence")
 
 
 def handle_analysis_query(prompt: str, symbol: str) -> str:
     """Handle general analysis queries"""
     if symbol:
-        # Enhance with context if available
         crypto_data = st.session_state.get(f'{symbol}_data')
         if crypto_data:
-            enhanced_prompt = f"{prompt}\n\nFocus on {symbol} specifically."
-            st.session_state.coin_agent.set_context(symbol, crypto_data)
+            enhanced_prompt = f"{prompt}\n\nFocus on analyzing the historical data for {symbol}."
         else:
             enhanced_prompt = prompt
         
@@ -340,55 +351,108 @@ def handle_analysis_query(prompt: str, symbol: str) -> str:
     else:
         response = st.session_state.coin_agent.ask(prompt)
     
-    return format_agent_response(response, "Cryptocurrency Analyst")
+    return format_agent_response(response, "Data-Driven Analyst")
 
 
-def process_quick_action(query: str, selected_symbol: str, available_symbols: list):
-    """Process quick action button clicks"""
-    st.session_state.messages.append({
-        "role": "user", 
-        "content": query,
-        "timestamp": datetime.now().strftime("%I:%M %p")
-    })
-    st.rerun()
-
-
-def display_sidebar_info(selected_symbol: str):
-    """Display helpful information in sidebar"""
+def display_sidebar_info(selected_symbol: str, available_symbols: list):
+    """Display clean and organized sidebar with essential information"""
     with st.sidebar:
-        st.markdown("---")
-        
-        st.markdown("### 💡 Tips")
         st.markdown("""
-        - **Select a cryptocurrency** for context-aware analysis
-        - **Use quick actions** for instant insights
-        - **Ask follow-up questions** to dive deeper
-        - **Compare multiple coins** for better decisions
-        """)
+        <div style="text-align: center; padding: 15px 0;">
+            <h2 style="margin: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+                       background-clip: text; font-size: 1.5rem;">
+                🤖 Data Analyst
+            </h2>
+            <p style="color: #666; font-size: 0.8rem; margin: 5px 0 0 0;">Analyzing YOUR Database</p>
+        </div>
+        """, unsafe_allow_html=True)
         
         st.markdown("---")
         
-        st.markdown("### 🎯 What I Can Help With")
+        if selected_symbol:
+            # Show data statistics
+            history_df = st.session_state.get(f'{selected_symbol}_history')
+            if history_df is not None and not history_df.empty:
+                st.markdown(f"""
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            padding: 12px; border-radius: 8px; color: white; margin-bottom: 15px; text-align: center;">
+                    <div style="font-size: 0.75rem; opacity: 0.9;">Analyzing</div>
+                    <div style="font-size: 1.2rem; font-weight: bold; margin: 5px 0;">{selected_symbol}</div>
+                    <div style="font-size: 0.7rem; opacity: 0.8;">✓ {len(history_df)} Data Points</div>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        message_count = len(st.session_state.get('messages', []))
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("💬 Messages", message_count)
+        with col2:
+            st.metric("📊 Assets", len(available_symbols))
+        
+        st.markdown("---")
+        
+        with st.expander("🎯 **What I Analyze**"):
+            st.markdown("""
+            **📊 Historical Data**  
+            Price trends, highs, lows
+            
+            **💡 Best Opportunities**  
+            When to buy/sell based on data
+            
+            **📈 Performance**  
+            Gains/losses over time
+            
+            **🔍 Comparisons**  
+            Current vs historical prices
+            """)
+        
+        with st.expander("💭 **Example Questions**"):
+            example_questions = [
+                "When was the best time to buy?",
+                "Show me price trends",
+                "Am I buying at a good price?",
+            ]
+            
+            for i, question in enumerate(example_questions, 1):
+                if st.button(f"💬 {question}", key=f"example_{i}", use_container_width=True):
+                    st.session_state.messages.append({
+                        "role": "user", 
+                        "content": question,
+                        "timestamp": datetime.now().strftime("%I:%M %p")
+                    })
+                    st.session_state['pending_query'] = question
+                    st.rerun()
+        
+        st.markdown("---")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("🗑️ Clear", use_container_width=True, type="secondary"):
+                st.session_state.messages = []
+                st.session_state.coin_agent.reset_conversation()
+                st.session_state.rationale_agent.reset_conversation()
+                st.session_state.summary_agent.reset_conversation()
+                if 'last_selected_symbol' in st.session_state:
+                    del st.session_state['last_selected_symbol']
+                st.rerun()
+        
+        with col2:
+            if st.button("🔄 Refresh", use_container_width=True):
+                st.rerun()
+        
+        st.markdown("---")
         st.markdown("""
-        - **Technical Analysis**: Charts, indicators, trends
-        - **Fundamental Analysis**: Technology, team, roadmap
-        - **Investment Insights**: Risk/reward, timing
-        - **Market Intelligence**: Trends, sentiment, news
-        - **Portfolio Advice**: Diversification, allocation
-        """)
+        <div style="background-color: #d1ecf1; padding: 8px; border-radius: 4px; 
+                    border-left: 3px solid #0c5460;">
+            <small><strong>💡 Tip</strong><br/>
+            I analyze YOUR database data - ask about specific dates and prices!</small>
+        </div>
+        """, unsafe_allow_html=True)
         
-        st.markdown("---")
-        
-        if st.button("🗑️ Clear Chat History", use_container_width=True):
-            st.session_state.messages = []
-            st.session_state.coin_agent.reset_conversation()
-            st.session_state.rationale_agent.reset_conversation()
-            st.session_state.summary_agent.reset_conversation()
-            if 'last_selected_symbol' in st.session_state:
-                del st.session_state['last_selected_symbol']
-            st.success("Chat history cleared!")
-            st.rerun()
-        
-        st.markdown("---")
-        st.caption(f"💬 Messages: {len(st.session_state.get('messages', []))}")
-        st.caption(f"🤖 AI Model: openai/gpt-oss-120b")
+        st.markdown("""
+        <div style="text-align: center; padding-top: 15px; color: #999; font-size: 0.7rem;">
+            StockyTalky © 2025
+        </div>
+        """, unsafe_allow_html=True)
