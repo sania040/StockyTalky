@@ -1,4 +1,5 @@
 import streamlit as st
+<<<<<<< HEAD
 import pandas as pd
 import plotly.express as px  # Add this import
 from src.db.crypto_db import createTable
@@ -10,6 +11,12 @@ from src.chatbot import show_chatbot
 from src.db.query_utils import execute_query
 
 # This must be the first Streamlit command
+=======
+from src.utils.styles import load_css
+from src.pages import data_collection, dashboard, ml_recommendations, advanced_analytics, chatbot
+
+# Must be first Streamlit command
+>>>>>>> raw
 st.set_page_config(
     page_title="StockyTalky - Crypto Analysis Platform",
     page_icon="📊",
@@ -17,6 +24,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+<<<<<<< HEAD
 # CSS for styling
 def load_css():
     st.markdown("""    
@@ -344,11 +352,17 @@ def main():
     # Initialize session state for navigation
     if 'page' not in st.session_state:
         st.session_state['page'] = "Data Collection"
+=======
+def main():
+    # Load styles
+    load_css()
+>>>>>>> raw
     
     # Sidebar navigation
     st.sidebar.title("StockyTalky")
     st.sidebar.image("https://img.icons8.com/fluency/96/000000/investment.png", width=100)
     
+<<<<<<< HEAD
     selected = st.sidebar.radio(
         "Navigation", 
         ["Data Collection", "Investment Dashboard", "ML Recommendations", "Advanced Analytics", "Crypto Assistant"]
@@ -374,6 +388,30 @@ def show_advanced_analytics():
     """Displays the advanced analytics page"""
     from src.db.advanceVisualization import show_advanced_visualization
     show_advanced_visualization()
+=======
+    page = st.sidebar.radio(
+        "Navigation", 
+        [
+            "Data Collection",
+            "Investment Dashboard",
+            "ML Recommendations",
+            "Advanced Analytics",
+            "Crypto Assistant"
+        ]
+    )
+    
+    # Route to appropriate page
+    if page == "Data Collection":
+        data_collection.show()
+    elif page == "Investment Dashboard":
+        dashboard.show()
+    elif page == "ML Recommendations":
+        ml_recommendations.show()
+    elif page == "Advanced Analytics":
+        advanced_analytics.show()
+    elif page == "Crypto Assistant":
+        chatbot.show()
+>>>>>>> raw
 
 if __name__ == "__main__":
     main()

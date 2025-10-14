@@ -2,6 +2,7 @@ import time
 import argparse
 import os
 from dotenv import load_dotenv
+<<<<<<< HEAD
 from db.get_connection import get_db_connection
 from fetch_and_store_crypto import CryptoDataFetcher
 from src.db.query_utils import execute_query, execute_and_commit
@@ -37,13 +38,34 @@ def collect_crypto_data(symbols, interval=10, max_rows=100):
             conn = get_db_connection()
             
             for symbol in symbols:
+=======
+import schedule
+from src.api.crypto_fetcher import CryptoDataFetcher
+from src.db.get_connection import get_db_connection
+from src.db.query_utils import execute_query, execute_and_commit
+
+class DataCollector:
+    def __init__(self, symbols):
+        self.fetcher = CryptoDataFetcher()
+        self.symbols = symbols
+
+    def collect_data(self, interval, max_rows):
+        """Fetch and store data for all symbols"""
+        conn = get_db_connection()
+        try:
+            for symbol in self.symbols:
+>>>>>>> raw
                 try:
                     # Check current row count for this symbol
                     result_df = execute_query("SELECT COUNT(*) FROM crypto_prices WHERE symbol = %s", (symbol,))
                     row_count = result_df.iloc[0, 0]
                     
                     print(f"Fetching data for {symbol}...")
+<<<<<<< HEAD
                     api_data = fetcher.fetch_data_for_symbol(symbol)
+=======
+                    api_data = self.fetcher.fetch_data_for_symbol(symbol)
+>>>>>>> raw
                     
                     if row_count >= max_rows:
                         print(f"Row limit reached for {symbol}. Updating oldest record...")
@@ -80,7 +102,11 @@ def collect_crypto_data(symbols, interval=10, max_rows=100):
                         print(f"Updated oldest record for {symbol}")
                     else:
                         print(f"Storing new data for {symbol}...")
+<<<<<<< HEAD
                         fetcher.store_data(conn, api_data, symbol)
+=======
+                        self.fetcher.store_data(conn, api_data, symbol)
+>>>>>>> raw
                         print(f"Successfully stored new data for {symbol}")
                         
                 except Exception as e:
@@ -95,6 +121,7 @@ def collect_crypto_data(symbols, interval=10, max_rows=100):
             print(f"Waiting {interval} seconds until next collection...")
             time.sleep(interval)
             
+<<<<<<< HEAD
     except KeyboardInterrupt:
         print("\nData collection stopped by user")
     except Exception as e:
@@ -106,14 +133,53 @@ def collect_crypto_data(symbols, interval=10, max_rows=100):
                 conn.close()
         except:
             pass
+=======
+        except KeyboardInterrupt:
+            print("\nData collection stopped by user")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+        finally:
+            # Ensure connection is closed if an exception occurs
+            try:
+                if conn and not conn.closed:
+                    conn.close()
+            except:
+                pass
+
+def run_collector(symbols, interval=300, max_rows=100):
+    """Main function to run the data collection process"""
+    collector = DataCollector(symbols)
+    
+    # Schedule data collection every 5 minutes
+    schedule.every(interval).seconds.do(collector.collect_data, interval, max_rows)
+    
+    # Run initial collection
+    print("🚀 Starting initial data collection...")
+    collector.collect_data(interval, max_rows)
+    
+    # Keep running the scheduler
+    print(f"📊 Starting scheduled collection every {interval} seconds...")
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
+>>>>>>> raw
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Collect cryptocurrency data at regular intervals")
     parser.add_argument("symbols", nargs="+", help="Cryptocurrency symbols to track (e.g., BTC ETH XRP)")
+<<<<<<< HEAD
     parser.add_argument("-i", "--interval", type=int, default=10, 
                         help="Time interval between data collections in seconds (default: 10)")
+=======
+    parser.add_argument("-i", "--interval", type=int, default=300, 
+                        help="Time interval between data collections in seconds (default: 300)")
+>>>>>>> raw
     parser.add_argument("-m", "--max-rows", type=int, default=100,
                         help="Maximum number of rows to keep per symbol (default: 100)")
     
     args = parser.parse_args()
+<<<<<<< HEAD
     collect_crypto_data(args.symbols, args.interval, args.max_rows)
+=======
+    run_collector(args.symbols, args.interval, args.max_rows)
+>>>>>>> raw
