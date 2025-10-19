@@ -11,11 +11,11 @@ def get_db_connection():
         db_url = os.getenv("SUPABASE_DB_URL")
         print(f"Connecting to database with URL: {db_url}")  # Debugging
         conn = psycopg2.connect(
-            host = "aws-1-us-east-2.pooler.supabase.com",  # Force IPv4
+            host = os.getenv("DB_HOST"),  # Force IPv4
             port = 5432,
-            user = "postgres.lrwerkzxmliqivzniblu",
-            password = "sania@Supabase",
-            dbname = "postgres", 
+            user = os.getenv("DB_USER"),
+            password = os.getenv("DB_PASSWORD"),
+            dbname = os.getenv("DB_NAME"),
             # pool_mode= 'session'
         )
         return conn
