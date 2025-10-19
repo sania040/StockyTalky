@@ -1,23 +1,25 @@
-import psycopg2
 import os
+import psycopg2
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-# load_dotenv()
+load_dotenv()
 
 def get_db_connection():
-    """Establishes and returns a connection to the PostgreSQL database."""
+    """Establish a connection to the Supabase database."""
     try:
-        load_dotenv()
+        db_url = os.getenv("SUPABASE_DB_URL")
+        print(f"Connecting to database with URL: {db_url}")  # Debugging
         conn = psycopg2.connect(
-            dbname=os.getenv("DB_NAME"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
-            host=os.getenv("DB_HOST"),
-            port=os.getenv("DB_PORT")
+            host = "aws-1-us-east-2.pooler.supabase.com",  # Force IPv4
+            port = 5432,
+            user = "postgres.lrwerkzxmliqivzniblu",
+            password = "sania@Supabase",
+            dbname = "postgres", 
+            # pool_mode= 'session'
         )
         return conn
-    except psycopg2.OperationalError as e:
+    except Exception as e:
         print(f"Error connecting to the database: {e}")
         raise e
 
