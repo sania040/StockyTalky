@@ -77,7 +77,16 @@ class DataCollector:
 
 def main():
     """Main function to parse arguments and run the data collection process once."""
-    load_dotenv()
+    load_dotenv() # Load environment variables from .env if present for local testing
+    print("--- 🕵️ Debugging Secrets ---")
+    db_host = os.getenv("DB_HOST")
+    api_key = os.getenv("COINMARKETCAP_API_KEY")
+    print(f"DB_HOST variable is: {db_host}")
+    print(f"API Key variable is set: {api_key is not None}") # Don't print the key itself!
+    if not db_host or not api_key:
+        print("🔴 CRITICAL: Secrets are NOT loaded. Exiting.")
+        return # Exit the script if secrets are missing
+    print("--- ✅ Secrets seem to be loaded. Proceeding. ---")
 
     parser = argparse.ArgumentParser(description="Collect cryptocurrency data a single time.")
     parser.add_argument("symbols", nargs="+", help="Cryptocurrency symbols to track (e.g., BTC ETH XRP)")
