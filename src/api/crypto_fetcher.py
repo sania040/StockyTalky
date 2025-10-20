@@ -2,7 +2,7 @@ import os
 import requests
 from datetime import datetime
 from dotenv import load_dotenv
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 load_dotenv()
 
@@ -16,17 +16,18 @@ class CryptoDataFetcher:
         if not self.api_key:
             raise ValueError("API key not found. Set COINMARKETCAP_API_KEY in .env")
     
-    def fetch_data_for_symbol(self, symbol: str) -> Dict[str, Any]:
-        """Fetch raw data from CoinMarketCap API"""
-        params = {'symbol': symbol, 'convert': 'USD'}
+    def fetch_data_for_symbol(self, symbols: List[str]) -> Dict[str, Any]:
+        """Fetch raw data for multiple symbols in a single API call."""
+        symbols_string = ','.join(symbols)
+        params = {'symbol': symbols_string, 'convert': 'USD'}
         headers = {'X-CMC_PRO_API_KEY': self.api_key}
         
         response = requests.get(self.api_url, headers=headers, params=params)
         response.raise_for_status()
         
         data = response.json()
-        if 'data' not in data or symbol not in data['data']:
-            raise ValueError(f"Invalid response for {symbol}")
+        if 'data' not in data:
+            raise ValueError(f"Invalid response for {symbols_string}")
         
         return data
     
