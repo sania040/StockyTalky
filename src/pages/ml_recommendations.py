@@ -1,284 +1,113 @@
+# src/pages/ml_recommendations.py
+
 import streamlit as st
 import pandas as pd
-import numpy as np
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
+import plotly.express as px
+from prophet import Prophet
+from src.db.get_connection import get_db_connection
 from src.db.query_utils import execute_query
 
+# --- Data Loading Function ---
+
+@st.cache_data(ttl=600)
+def load_all_data():
+    """Fetches all historical price data for analysis."""
+    print("--- Fetching all historical data for ML page ---")
+    query = "SELECT timestamp, symbol, price_usd FROM crypto_prices ORDER BY timestamp ASC;"
+    conn = get_db_connection()
+    df = execute_query(conn, query)
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    return df
+
+# --- Main Page Function ---
+
 def show():
-    """Display ML recommendations page"""
-    st.title("🤖 ML-Powered Investment Recommendations")
-    
-    # Fetch data
-    df = execute_query("""
-        SELECT symbol, price_usd, volume_24h_usd, percent_change_24h, 
-               market_cap_usd, timestamp 
-        FROM crypto_prices 
-        ORDER BY timestamp DESC
-        LIMIT 2500
-    """)
-    
-    if df.empty:
-        st.info("No data available. Please collect some data first.")
+    """Renders the ML Recommendations & Market Analysis page."""
+    st.title("🧠 Market Analysis & ML Insights")
+
+    all_data = load_all_data()
+
+    if all_data.empty or len(all_data['symbol'].unique()) < 2:
+        st.warning("Not enough diverse data to generate analysis. Please wait for more data to be collected.")
         return
-    
-    # Model selection
-    st.subheader("Select Prediction Model")
-    
-    model_type = st.radio(
-        "Choose analysis approach:",
-        ["Simple Trend Analysis", "Ensemble Model", "Technical Indicators"],
-        horizontal=True
+
+    # --- Feature 1: Multi-Coin Performance Comparison ---
+    st.header("📈 Multi-Coin Performance Comparison")
+    st.info("This chart shows the percentage growth of different cryptocurrencies from a common starting point.")
+
+    all_symbols = all_data['symbol'].unique()
+    selected_symbols = st.multiselect(
+        "Select cryptocurrencies to compare:",
+        options=all_symbols,
+        default=all_symbols[:5].tolist()
     )
-    
-    with st.spinner("Analyzing market data and generating recommendations..."):
-        
-        if model_type == "Simple Trend Analysis":
-            recommendations = analyze_simple_trends(df)
-        elif model_type == "Ensemble Model":
-            recommendations = analyze_with_ml(df)
-        else:
-            recommendations = analyze_technical_indicators(df)
-        
-        if recommendations.empty:
-            st.warning("Not enough data to generate recommendations.")
-            return
-        
-        # Display top 5 recommendations
-        st.subheader("🌟 Top 5 Investment Recommendations")
-        
-        top_5 = recommendations.nlargest(5, 'predicted_return')
-        
-        for i, (_, row) in enumerate(top_5.iterrows(), 1):
-            display_recommendation_card(i, row, model_type)
 
-def analyze_simple_trends(df):
-    """Simple trend-based analysis"""
-    prediction_data = []
-    
-    for symbol in df['symbol'].unique():
-        symbol_data = df[df['symbol'] == symbol].sort_values('timestamp')
-        
-        if len(symbol_data) < 5:
-            continue
-        
-        recent = symbol_data.tail(10)
-        
-        # Calculate trends
-        price_trend = recent['price_usd'].pct_change().mean() * 100
-        volume_trend = recent['volume_24h_usd'].pct_change().mean() * 100
-        volatility = recent['price_usd'].pct_change().std() * 100
-        
-        # Simple scoring
-        trend_score = (
-            price_trend * 0.5 + 
-            volume_trend * 0.3 + 
-            (10 - min(volatility, 10)) * 0.2
+    if selected_symbols:
+        comparison_df = all_data[all_data['symbol'].isin(selected_symbols)]
+        normalized_df = pd.DataFrame()
+        for symbol in selected_symbols:
+            symbol_data = comparison_df[comparison_df['symbol'] == symbol].copy()
+            if not symbol_data.empty:
+                symbol_data['normalized_price'] = symbol_data['price_usd'] / symbol_data['price_usd'].iloc[0] * 100
+                normalized_df = pd.concat([normalized_df, symbol_data])
+
+        fig_performance = px.line(
+            normalized_df, x='timestamp', y='normalized_price', color='symbol',
+            title='Normalized Price Growth Comparison',
+            labels={'normalized_price': 'Growth (Baseline 100)', 'timestamp': 'Date'}
         )
-        
-        # Calculate RSI
-        delta = recent['price_usd'].diff()
-        gain = delta.where(delta > 0, 0).mean()
-        loss = -delta.where(delta < 0, 0).mean()
-        rsi = 100 - (100 / (1 + (gain / loss))) if loss != 0 else 50
-        
-        # Adjust score based on RSI
-        if rsi > 70:
-            trend_score *= 0.7
-        elif rsi < 30:
-            trend_score *= 1.3
-        
-        prediction_data.append({
-            'symbol': symbol,
-            'current_price': recent['price_usd'].iloc[-1],
-            'price_trend': price_trend,
-            'volume_trend': volume_trend,
-            'volatility': volatility,
-            'rsi': rsi,
-            'predicted_return': trend_score,
-            'confidence': 0.7
-        })
-    
-    return pd.DataFrame(prediction_data)
+        st.plotly_chart(fig_performance, use_container_width=True)
 
-def analyze_with_ml(df):
-    """ML-based analysis using Random Forest"""
-    # Prepare features
-    all_features = []
-    future_returns = []
-    
-    for symbol in df['symbol'].unique():
-        symbol_data = df[df['symbol'] == symbol].sort_values('timestamp')
-        
-        if len(symbol_data) < 20:
-            continue
-        
-        for i in range(15, len(symbol_data)-5):
-            window = symbol_data.iloc[i-15:i]
-            future = symbol_data.iloc[i+5]
-            
-            features = {
-                'symbol': symbol,
-                'current_price': window['price_usd'].iloc[-1],
-                'price_mean_5d': window['price_usd'].tail(5).mean(),
-                'price_std_5d': window['price_usd'].tail(5).std(),
-                'volume_mean_5d': window['volume_24h_usd'].tail(5).mean(),
-                'price_trend': window['price_usd'].pct_change().mean() * 100,
-                'market_cap': window['market_cap_usd'].iloc[-1]
-            }
-            
-            future_return = ((future['price_usd'] / window['price_usd'].iloc[-1]) - 1) * 100
-            
-            if not pd.isna(future_return):
-                all_features.append(features)
-                future_returns.append(future_return)
-    
-    if len(all_features) < 30:
-        return pd.DataFrame()
-    
-    feature_df = pd.DataFrame(all_features)
-    X_cols = [col for col in feature_df.columns if col != 'symbol']
-    X = feature_df[X_cols].fillna(0)
-    y = future_returns
-    
-    # Train model
-    model = RandomForestRegressor(n_estimators=100, random_state=42)
-    model.fit(X, y)
-    
-    # Generate predictions
-    prediction_data = []
-    for symbol in df['symbol'].unique():
-        symbol_data = df[df['symbol'] == symbol].sort_values('timestamp')
-        
-        if len(symbol_data) < 15:
-            continue
-        
-        recent = symbol_data.tail(15)
-        
-        pred_features = {
-            'current_price': recent['price_usd'].iloc[-1],
-            'price_mean_5d': recent['price_usd'].tail(5).mean(),
-            'price_std_5d': recent['price_usd'].tail(5).std(),
-            'volume_mean_5d': recent['volume_24h_usd'].tail(5).mean(),
-            'price_trend': recent['price_usd'].pct_change().mean() * 100,
-            'market_cap': recent['market_cap_usd'].iloc[-1]
-        }
-        
-        X_pred = pd.DataFrame([pred_features])[X_cols].fillna(0)
-        predicted_return = model.predict(X_pred)[0]
-        
-        prediction_data.append({
-            'symbol': symbol,
-            'current_price': recent['price_usd'].iloc[-1],
-            'predicted_return': predicted_return,
-            'confidence': 0.75
-        })
-    
-    return pd.DataFrame(prediction_data)
+    st.markdown("---")
 
-def analyze_technical_indicators(df):
-    """Technical indicator-based analysis"""
-    prediction_data = []
-    
-    for symbol in df['symbol'].unique():
-        symbol_data = df[df['symbol'] == symbol].sort_values('timestamp')
-        
-        if len(symbol_data) < 20:
-            continue
-        
-        prices = symbol_data['price_usd']
-        
-        # Calculate indicators
-        sma_short = prices.rolling(5).mean().iloc[-1]
-        sma_long = prices.rolling(20).mean().iloc[-1]
-        current_price = prices.iloc[-1]
-        
-        # Technical score
-        tech_score = 0
-        if current_price > sma_short:
-            tech_score += 2
-        if current_price > sma_long:
-            tech_score += 2
-        if sma_short > sma_long:
-            tech_score += 2
-        
-        # RSI
-        delta = prices.diff()
-        gain = delta.where(delta > 0, 0).rolling(14).mean().iloc[-1]
-        loss = -delta.where(delta < 0, 0).rolling(14).mean().iloc[-1]
-        rsi = 100 - (100 / (1 + (gain / loss))) if loss != 0 else 50
-        
-        if rsi < 30:
-            tech_score += 2
-        elif rsi > 70:
-            tech_score -= 2
-        
-        predicted_return = tech_score * 1.5
-        confidence = min(0.95, 0.5 + abs(tech_score) * 0.05)
-        
-        prediction_data.append({
-            'symbol': symbol,
-            'current_price': current_price,
-            'predicted_return': predicted_return,
-            'confidence': confidence,
-            'rsi': rsi
-        })
-    
-    return pd.DataFrame(prediction_data)
+    # --- Feature 2: Correlation Heatmap ---
+    st.header("🔗 Asset Correlation Heatmap")
+    st.info("This heatmap shows how closely different cryptocurrencies' prices move together. A high value (close to 1.0) means they move in the same direction.")
 
-def display_recommendation_card(rank, row, model_type):
-    """Display a recommendation card"""
-    symbol = row['symbol']
-    predicted_return = row['predicted_return']
-    current_price = row['current_price']
-    confidence = row['confidence']
+    pivot_df = all_data.pivot_table(index='timestamp', columns='symbol', values='price_usd')
+    returns_df = pivot_df.pct_change().dropna()
+    correlation_matrix = returns_df.corr()
+
+    fig_heatmap = px.imshow(
+        correlation_matrix, text_auto=".2f", aspect="auto",
+        color_continuous_scale='RdYlGn', title='Cryptocurrency Price Correlation Matrix'
+    )
+    st.plotly_chart(fig_heatmap, use_container_width=True)
+
+    st.markdown("---")
+
+    # --- NEW FEATURE: Price Forecasting with Prophet ---
+    st.header("🔮 Simple Price Forecasting")
+    st.info("This tool uses the Prophet time-series model to generate a statistical forecast of future price action. This is not financial advice.")
+
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        forecast_symbol = st.selectbox("Select a cryptocurrency to forecast:", options=all_symbols)
+        forecast_days = st.slider("Select forecast period (days):", min_value=7, max_value=90, value=30)
     
-    # Determine recommendation type
-    if predicted_return > 5:
-        recommendation = "Strong Buy"
-        color = "buy"
-    elif predicted_return > 2:
-        recommendation = "Buy"
-        color = "buy"
-    elif predicted_return > 0:
-        recommendation = "Hold"
-        color = "hold"
-    else:
-        recommendation = "Watch"
-        color = "hold"
-    
-    # Generate insight
-    if predicted_return > 5:
-        insight = f"{symbol} shows promising momentum with strong growth potential."
-    elif predicted_return > 2:
-        insight = f"{symbol} displays positive signals with moderate growth potential."
-    elif predicted_return > 0:
-        insight = f"{symbol} appears stable with balanced risk-reward profile."
-    else:
-        insight = f"{symbol} exhibits cautionary signals; monitor before investing."
-    
-    st.markdown(f"""
-    <div class="card {color}">
-        <h3>#{rank} {symbol}</h3>
-        <div style="display: flex; justify-content: space-between;">
-            <div>
-                <p class="metric-label">Current Price</p>
-                <p class="metric-value">${current_price:.2f}</p>
-            </div>
-            <div>
-                <p class="metric-label">Predicted Return</p>
-                <p class="metric-value {'positive' if predicted_return > 0 else 'negative'}">{predicted_return:.2f}%</p>
-            </div>
-            <div>
-                <p class="metric-label">Recommendation</p>
-                <p class="metric-value">{recommendation}</p>
-            </div>
-        </div>
-        <div style="background-color: rgba(0,0,0,0.03); padding: 8px; border-radius: 4px; margin-top: 8px;">
-            <p style="margin: 0; font-style: italic;">"{insight}"</p>
-        </div>
-        <p><small>Confidence: {confidence:.0%} | Model: {model_type}</small></p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button(f"Generate Forecast for {forecast_symbol}"):
+        with st.spinner(f"Training model and forecasting {forecast_days} days for {forecast_symbol}..."):
+            # Prepare data for Prophet
+            symbol_data = all_data[all_data['symbol'] == forecast_symbol][['timestamp', 'price_usd']]
+            prophet_df = symbol_data.rename(columns={'timestamp': 'ds', 'price_usd': 'y'})
+
+            if len(prophet_df) < 30:
+                st.error("Not enough historical data to generate a reliable forecast. Please wait for more data to be collected.")
+            else:
+                # Initialize and train the model
+                model = Prophet()
+                model.fit(prophet_df)
+
+                # Make future dataframe and predict
+                future = model.make_future_dataframe(periods=forecast_days)
+                forecast = model.predict(future)
+
+                # Plot the forecast
+                st.subheader(f"Forecast for {forecast_symbol}")
+                fig_forecast = model.plot(forecast)
+                st.pyplot(fig_forecast)
+
+                # Plot forecast components
+                st.subheader(f"Forecast Components")
+                fig_components = model.plot_components(forecast)
+                st.pyplot(fig_components)
