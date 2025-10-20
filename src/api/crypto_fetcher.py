@@ -16,7 +16,7 @@ class CryptoDataFetcher:
         if not self.api_key:
             raise ValueError("API key not found. Set COINMARKETCAP_API_KEY in .env")
     
-    def fetch_data_for_symbol(self, symbols: List[str]) -> Dict[str, Any]:
+    def fetch_data_for_symbols(self, symbols: List[str]) -> Dict[str, Any]:
         """Fetch raw data for multiple symbols in a single API call."""
         symbols_string = ','.join(symbols)
         params = {'symbol': symbols_string, 'convert': 'USD'}

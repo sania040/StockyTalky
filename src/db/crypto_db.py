@@ -1,8 +1,6 @@
 import psycopg2
 from src.db.get_connection import get_db_connection
 
-
-
 def createTable():
     conn = get_db_connection()
     if conn is None:
