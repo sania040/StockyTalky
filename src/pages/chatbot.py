@@ -6,12 +6,13 @@ from langchain_community.agent_toolkits import create_sql_agent
 from langchain_community.utilities import SQLDatabase
 from langchain_groq import ChatGroq
 from langchain.memory import ConversationBufferMemory
+from langchain_core.prompts.chat import MessagesPlaceholder
 
 # --- Agent Initialization (Cached for performance) ---
 
 @st.cache_resource
 def get_conversational_sql_agent():
-    """Initializes a conversational agent with memory that can query the database."""
+    """Initializes a conversational agent with memory that queries the crypto_prices table."""
     try:
         groq_api_key = os.getenv("GROQ_API_KEY")
         if not groq_api_key:
@@ -21,24 +22,23 @@ def get_conversational_sql_agent():
         llm = ChatGroq(model_name="llama-3.1-8b-instant", temperature=0, groq_api_key=groq_api_key)
         
         db_uri = f"postgresql+psycopg2://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT', '5432')}/{os.getenv('DB_NAME')}"
-        db = SQLDatabase.from_uri(db_uri)
+        db = SQLDatabase.from_uri(db_uri, include_tables=['crypto_prices'])
 
-        # --- FIX: A much more robust prompt for the agent ---
+        # --- FIX: Emphasized the LIMIT 1 rule ---
         AGENT_PROMPT_PREFIX = """
-        You are a friendly and helpful crypto data analyst named StockyTalky.
-        You have access to a PostgreSQL database with a table called `crypto_prices`.
-        You have a conversation history to understand follow-up questions.
-        You must work step-by-step.
+        You are StockyTalky, an AI assistant answering questions using the `crypto_prices` table ONLY.
+        You have chat history for context.
 
-        **RULES:**
-        1.  If the user's question can be answered by querying the database (e.g., asking for a price, volume, trend), you MUST use your tools to query for the data.
-        2.  When asked for a price or metric without a specific time, ALWAYS query for the single most recent entry by using `ORDER BY timestamp DESC LIMIT 1`.
-        3.  If the user asks a general conversational question that CANNOT be answered from the database (e.g., "hi", "what is market cap?", "how are you?"), you MUST respond with a friendly, conversational answer **without using your tools**. Your response should be your final answer.
+        **CRITICAL RULE: When asked for the current price, market cap, volume, or any single metric, you MUST retrieve only the single most recent entry. Use `ORDER BY timestamp DESC LIMIT 1` in your SQL query.**
+
+        To find the 'best'/'worst' performer, query the latest entries and order by `percent_change_24h` DESC/ASC `LIMIT 1`.
+        If the question is conversational (like "hi"), respond conversationally without querying.
+        Do NOT use `sql_db_list_tables`. Assume `crypto_prices` is the ONLY table.
+        First, check the schema of `crypto_prices` using `sql_db_schema`. Then, construct and run your query using `sql_db_query`.
         """
         
-        # We need to manage memory manually for this agent type
         if "agent_memory" not in st.session_state:
-            st.session_state.agent_memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+            st.session_state.agent_memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True, k=5)
 
         agent_executor = create_sql_agent(
             llm=llm,
@@ -47,6 +47,10 @@ def get_conversational_sql_agent():
             prefix=AGENT_PROMPT_PREFIX,
             verbose=True,
             handle_parsing_errors=True,
+            agent_executor_kwargs={
+                "memory": st.session_state.agent_memory,
+                "input_variables": ["input", "agent_scratchpad", "chat_history"],
+            }
         )
         
         return agent_executor
@@ -81,10 +85,10 @@ def show():
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
                 try:
-                    # Get chat history from our session state memory
+                    # Get chat history
                     chat_history = st.session_state.agent_memory.load_memory_variables({})["chat_history"]
 
-                    # Invoke the agent, providing both the new input and the chat history
+                    # Invoke the agent
                     response = agent_executor.invoke({
                         "input": prompt,
                         "chat_history": chat_history
@@ -92,9 +96,10 @@ def show():
                     
                     st.markdown(response["output"])
                     
-                    # Save the conversation turn to memory
+                    # Save context manually
                     st.session_state.agent_memory.save_context({"input": prompt}, {"output": response["output"]})
-                    # Save the assistant's response for UI display
+                    
+                    # Save for UI
                     st.session_state.messages.append({"role": "assistant", "content": response["output"]})
                     
                 except Exception as e:
