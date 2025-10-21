@@ -23,7 +23,7 @@ def load_all_data():
 
 def show():
     """Renders the ML Recommendations & Market Analysis page."""
-    st.title("🧠 Market Analysis & ML Insights")
+    st.title(" Market Analysis & ML Insights")
 
     all_data = load_all_data()
 
@@ -32,7 +32,7 @@ def show():
         return
 
     # --- Feature 1: Multi-Coin Performance Comparison ---
-    st.header("📈 Multi-Coin Performance Comparison")
+    st.header(" Multi-Coin Performance Comparison")
     st.info("This chart shows the percentage growth of different cryptocurrencies from a common starting point.")
 
     all_symbols = all_data['symbol'].unique()
@@ -61,7 +61,7 @@ def show():
     st.markdown("---")
 
     # --- Feature 2: Correlation Heatmap ---
-    st.header("🔗 Asset Correlation Heatmap")
+    st.header(" Asset Correlation Heatmap")
     st.info("This heatmap shows how closely different cryptocurrencies' prices move together. A high value (close to 1.0) means they move in the same direction.")
 
     pivot_df = all_data.pivot_table(index='timestamp', columns='symbol', values='price_usd')
@@ -77,7 +77,7 @@ def show():
     st.markdown("---")
 
     # --- NEW FEATURE: Price Forecasting with Prophet ---
-    st.header("🔮 Simple Price Forecasting")
+    st.header(" Simple Price Forecasting")
     st.info("This tool uses the Prophet time-series model to generate a statistical forecast of future price action. This is not financial advice.")
 
     col1, col2 = st.columns([1, 2])
@@ -90,7 +90,7 @@ def show():
             # Prepare data for Prophet
             symbol_data = all_data[all_data['symbol'] == forecast_symbol][['timestamp', 'price_usd']]
             prophet_df = symbol_data.rename(columns={'timestamp': 'ds', 'price_usd': 'y'})
-
+            prophet_df['ds'] = prophet_df['ds'].dt.tz_localize(None)
             if len(prophet_df) < 30:
                 st.error("Not enough historical data to generate a reliable forecast. Please wait for more data to be collected.")
             else:

@@ -12,7 +12,7 @@ def get_db_connection():
         print(f"Connecting to database with URL: {db_url}")  # Debugging
         conn = psycopg2.connect(
             host = os.getenv("DB_HOST"),  # Force IPv4
-            port = 5432,
+            port = os.getenv("DB_PORT"),
             user = os.getenv("DB_USER"),
             password = os.getenv("DB_PASSWORD"),
             dbname = os.getenv("DB_NAME"),

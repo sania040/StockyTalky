@@ -108,7 +108,7 @@ def plot_charts(df, symbol):
 
 def show():
     """Renders the Advanced Analytics page."""
-    st.title("🔬 Advanced Analytics & Technical Indicators")
+    st.title(" Advanced Analytics & Technical Indicators")
     st.info("This page provides a deep-dive technical analysis for a single cryptocurrency, including key momentum and trend indicators.")
 
     symbols = load_all_symbols()

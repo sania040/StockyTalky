@@ -42,7 +42,7 @@ def load_historical_data(symbol):
 
 def show():
     """Renders the Investment Dashboard page."""
-    st.title("📈 Investment Dashboard")
+    st.title(" Investment Dashboard")
     latest_df = load_latest_data()
 
     if latest_df.empty:
@@ -61,15 +61,15 @@ def show():
     st.markdown("---")
 
     # --- NEW: Top & Worst Performers Section ---
-    st.subheader("🏆 Daily Market Movers")
+    st.subheader(" Daily Market Movers")
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown("#### 📈 Top 5 Gainers")
+        st.markdown("####  Top 5 Gainers")
         top_gainers = latest_df.nlargest(5, 'percent_change_24h')
         for _, row in top_gainers.iterrows():
             st.metric(label=row['symbol'], value=f"${row['price_usd']:.4f}", delta=f"{row['percent_change_24h']:.2f}%")
     with col2:
-        st.markdown("#### 📉 Top 5 Losers")
+        st.markdown("#### Top 5 Losers")
         top_losers = latest_df.nsmallest(5, 'percent_change_24h')
         for _, row in top_losers.iterrows():
             st.metric(label=row['symbol'], value=f"${row['price_usd']:.4f}", delta=f"{row['percent_change_24h']:.2f}%")
@@ -108,7 +108,7 @@ def show():
 
     st.markdown("---")
     # --- Data Table Section ---
-    st.subheader("📊 Cryptocurrency Screener")
+    st.subheader(" Cryptocurrency Screener")
     st.dataframe(latest_df.style.format({
         'price_usd': '${:,.4f}',
         'percent_change_24h': '{:+.2f}%',
