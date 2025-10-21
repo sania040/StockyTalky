@@ -4,3 +4,16 @@ requests
 psycopg2-binary
 python-dotenv
 pandas
+streamlit
+crewai
+plotly
+psycopg2-binary
+sqlalchemy
+pydantic-ai
+seaborn
+numpy
+langchain-core==0.2.9
+langchain-community==0.2.5
+langchain-groq==0.1.5
+scikit-learn
+prophet
