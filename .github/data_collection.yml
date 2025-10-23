@@ -9,7 +9,7 @@ on:
   # Runs the workflow on a schedule
   schedule:
     # Runs every 15 minutes
-    - cron: '*/15 * * * *'
+    - cron: "*/15 * * * *"
 
 jobs:
   collect-data:
@@ -24,7 +24,7 @@ jobs:
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       # Step 3: Installs Python dependencies from your requirements.txt file
       - name: Install dependencies
@@ -42,4 +42,4 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_NAME: ${{ secrets.DB_NAME }}
         run: |
-          python -m src.collect_data BTC ETH BNB USDT SOL XRP USDC ADA DOGE TON AVAX SHIB DOT TRX WBTC LINK MATIC NEAR LTC BCH ICP DAI UNI ETC LEO STETH XMR OKB FIL CRO APT LDO INJ RUNE ARB HBAR MKR QNT AAVE SUI OP XLM ENS GRT AXS FLOW KAS XTZ SNX EOS --max-rows 200
+          python -m src.collect_data BTC ETH BNB USDT SOL XRP USDC ADA DOGE TON AVAX SHIB DOT TRX WBTC LINK MATIC NEAR LTC BCH ICP DAI UNI ETC LEO STETH XMR OKB FIL CRO APT LDO INJ RUNE ARB HBAR MKR QNT AAVE SUI OP XLM ENS GRT AXS FLOW KAS XTZ SNX EOS --max-rows 5000
