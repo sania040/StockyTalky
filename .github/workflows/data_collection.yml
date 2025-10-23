@@ -9,7 +9,7 @@ on:
   # Runs the workflow on a schedule
   schedule:
     # Runs every 15 minutes
-    - cron: '*/15 * * * *'
+    - cron: "*/15 * * * *"
 
 jobs:
   collect-data:
@@ -24,7 +24,7 @@ jobs:
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       # Step 3: Installs Python dependencies from your requirements.txt file
       - name: Install dependencies
@@ -38,7 +38,7 @@ jobs:
           COINMARKETCAP_API_KEY: ${{ secrets.COINMARKETCAP_API_KEY }}
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           DB_HOST: ${{ secrets.DB_HOST }}
-          DB_HOST: ${{ secrets.DB_PORT }}
+          DB_PORT: ${{ secrets.DB_PORT }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_NAME: ${{ secrets.DB_NAME }}
