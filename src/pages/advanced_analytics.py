@@ -30,42 +30,65 @@ def load_historical_data(symbol):
 
 # --- Calculation Helper Function (Using Shorter Windows) ---
 
-def calculate_indicators(df):
-    """Calculates technical indicators based on daily OHLC data using shorter windows."""
+def calculate_indicators(df, min_days: int = 7):
+    """Calculates technical indicators based on daily OHLC data using shorter windows.
+
+    This function will reindex the series to a full daily range and forward-fill
+    so that short histories (e.g. 3 days) can still produce rolling indicators.
+    min_days controls the minimum number of total days required before the page
+    considers indicators meaningful (used by callers for checks).
+    """
     if df.empty:
         return pd.DataFrame()
 
+    # Resample to daily OHLC and reindex to a full daily range
     ohlc_df = df['price_usd'].resample('D').ohlc()
+    if ohlc_df.empty:
+        return pd.DataFrame()
+
+    full_idx = pd.date_range(start=ohlc_df.index.min(), end=ohlc_df.index.max(), freq='D')
+    ohlc_df = ohlc_df.reindex(full_idx)
+
+    # Forward-fill to create consecutive daily values where possible
+    ohlc_df = ohlc_df.ffill()
     close_price = ohlc_df['close']
 
-    # --- Use shorter windows ---
-    ohlc_df['SMA_7'] = close_price.rolling(window=7).mean()   # Changed from 20
-    ohlc_df['SMA_14'] = close_price.rolling(window=14).mean() # Changed from 50
+    # If after forward-fill we still don't have enough days, return empty
+    if len(close_price.dropna()) < min_days:
+        return pd.DataFrame()
 
-    # --- Base Bollinger Bands on SMA 14 ---
-    ohlc_df['BB_std'] = close_price.rolling(window=14).std() # Changed window to 14
-    ohlc_df['BB_MA'] = ohlc_df['SMA_14']                     # Use SMA 14 as the middle band
+    # Adaptive window sizes (don't exceed available data length)
+    win_7 = min(7, max(1, len(close_price)))
+    win_14 = min(14, max(1, len(close_price)))
+
+    ohlc_df['SMA_7'] = close_price.rolling(window=win_7).mean()
+    ohlc_df['SMA_14'] = close_price.rolling(window=win_14).mean()
+
+    # Bollinger Bands based on SMA_14 (adapted)
+    ohlc_df['BB_std'] = close_price.rolling(window=win_14).std()
+    ohlc_df['BB_MA'] = ohlc_df['SMA_14']
     ohlc_df['BB_upper'] = ohlc_df['BB_MA'] + (ohlc_df['BB_std'] * 2)
     ohlc_df['BB_lower'] = ohlc_df['BB_MA'] - (ohlc_df['BB_std'] * 2)
 
-    # RSI (already uses 14)
+    # RSI (adaptive window)
     delta = close_price.diff()
-    gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-    rs = gain / loss.replace(0, 1e-9) # Avoid division by zero
+    rsi_win = min(14, max(1, len(close_price)))
+    gain = (delta.where(delta > 0, 0)).rolling(window=rsi_win).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=rsi_win).mean()
+    rs = gain / loss.replace(0, 1e-9)
     ohlc_df['RSI'] = 100 - (100 / (1 + rs))
 
-    # MACD (already uses 12/26)
+    # MACD (standard parameters)
     ema_12 = close_price.ewm(span=12, adjust=False).mean()
     ema_26 = close_price.ewm(span=26, adjust=False).mean()
     ohlc_df['MACD'] = ema_12 - ema_26
     ohlc_df['MACD_signal'] = ohlc_df['MACD'].ewm(span=9, adjust=False).mean()
     ohlc_df['MACD_hist'] = ohlc_df['MACD'] - ohlc_df['MACD_signal']
-    
-    ohlc_df['volume'] = df['volume_24h_usd'].resample('D').sum()
-    
-    # Drop rows with NaN - will now only remove the first ~14 days
-    return ohlc_df.dropna() 
+
+    ohlc_df['volume'] = df['volume_24h_usd'].resample('D').sum().reindex(full_idx).ffill()
+
+    # Drop rows where core indicators are still NaN
+    return ohlc_df.dropna()
 
 # --- Plotting Helper Function (Updated for Shorter SMAs) ---
 
@@ -122,20 +145,31 @@ def show():
     selected_symbol = st.selectbox("Select a Cryptocurrency to Analyze", symbols)
 
     data_df = load_historical_data(selected_symbol)
-    
-    # --- FIX: Check for at least 14 data points now ---
-    if data_df.empty or len(data_df) < 14: 
-        st.warning(f"Not enough historical data for {selected_symbol} to generate short-term indicators (need ~14 days). Please wait for more data.")
+
+    # Let the user choose how aggressive the indicators should be (minimum consecutive days)
+    # Allow custom values up to a year so users can request longer minimum windows
+    min_days = st.number_input(
+        "Minimum consecutive days for indicators:",
+        min_value=3,
+        max_value=365,
+        value=7,
+        step=1,
+        help="Choose lower value to allow indicators with shorter histories (less reliable). You can set up to 365 days."
+    )
+
+    # --- Allow analysis with min_days; indicators adapt to available history ---
+    if data_df.empty or len(data_df) < min_days:
+        st.warning(f"Not enough historical data for {selected_symbol} to generate short-term indicators (need ~{min_days} days). Please wait for more data.")
         return
 
-    # Calculate indicators
-    data_with_indicators = calculate_indicators(data_df.copy()) 
+    # Calculate indicators (pass min_days so calculation can require it)
+    data_with_indicators = calculate_indicators(data_df.copy(), min_days=min_days)
 
     if data_with_indicators.empty:
         st.error(
             "Calculation resulted in empty data after `dropna()`. "
             "This likely means there aren't enough *consecutive daily data points* "
-            f"(need at least 14 for SMA_14/RSI) even with {data_df.shape[0]} total rows. "
+            f"(need at least {min_days} for basic short-term indicators) even with {data_df.shape[0]} total rows. "
             "Check the data quality or let the collector run longer."
         )
         return
