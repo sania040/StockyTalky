@@ -178,17 +178,46 @@ def show():
     st.markdown("---")
     st.header("Technical Analysis Chart")
     plot_charts(data_with_indicators, selected_symbol)
-
-    # --- Explanations Section (Updated for Shorter SMAs) ---
+# --- Explanations Section (Improved) ---
     st.markdown("---")
     st.header("How to Read These Indicators")
+
     with st.expander("SMA (Simple Moving Average)"):
-        # --- FIX: Updated text ---
-        st.write("The average price over a short period (7 or 14 days). Used to identify short-term trends.")
-    with st.expander("Bollinger Bands"):
-        # --- FIX: Updated text ---
-        st.write("Measures market volatility based on the 14-day SMA. Bands widen during high volatility.")
+        st.write("""
+            **What it is:** The average closing price over a specific period (here, 7 or 14 days). It smooths out price fluctuations to make the underlying trend clearer.
+            **How to read it:**
+            * **Trend Direction:** When the price is consistently **above** the SMAs, it suggests an **uptrend**. When below, it suggests a **downtrend**.
+            * **Crossovers:** When a shorter-term SMA (like SMA 7) crosses **above** a longer-term SMA (like SMA 14), it can signal potential **upward momentum** (a "Golden Cross" concept). The opposite (crossing below) can signal **downward momentum** (a "Death Cross" concept).
+        """)
+
+    with st.expander("Bollinger Bands®"):
+        st.write("""
+            **What they are:** Bands plotted two standard deviations above and below a central moving average (here, the 14-day SMA, shown as BB Middle). They measure price **volatility** relative to the recent trend.
+            **How to read them:**
+            * **Volatility:** Bands **widen** when volatility increases and **narrow** ('squeeze') when volatility decreases. A squeeze often precedes a significant price move.
+            * **Potential Reversals:** Prices touching the **upper band** might suggest the asset is becoming overbought short-term (potential pullback). Prices touching the **lower band** might suggest it's becoming oversold (potential bounce).
+            * **Breakouts:** A strong price move closing outside the bands can signal the start of a new trend.
+        """)
+        st.caption("Bollinger Bands® is a registered trademark of John Bollinger.")
+
+
     with st.expander("RSI (Relative Strength Index)"):
-        st.write("A momentum indicator (0-100). Above 70 suggests overbought, below 30 suggests oversold.")
+        st.write("""
+            **What it is:** A momentum oscillator measuring the **speed and change** of price movements on a scale of 0 to 100. It helps identify overbought or oversold conditions.
+            **How to read it:**
+            * **Overbought:** RSI reading **above 70** often suggests the asset price has risen quickly and might be due for a correction (potential sell signal).
+            * **Oversold:** RSI reading **below 30** often suggests the asset price has fallen quickly and might be due for a rebound (potential buy signal).
+            * **Momentum:** The direction of the RSI line indicates the momentum. Rising RSI suggests increasing bullish momentum; falling RSI suggests increasing bearish momentum.
+        """)
+        
+
     with st.expander("MACD (Moving Average Convergence Divergence)"):
-        st.write("A trend-following momentum indicator. Crossovers between the MACD and Signal lines suggest potential buy/sell signals.")
+        st.write("""
+            **What it is:** A trend-following momentum indicator showing the relationship between two exponential moving averages (EMAs) of the price.
+            **How to read it:**
+            * **MACD Line (Blue):** The difference between the 12-period EMA and the 26-period EMA.
+            * **Signal Line (Orange):** A 9-period EMA of the MACD line itself.
+            * **Histogram (Green/Red Bars):** The difference between the MACD line and the Signal line. It visually shows the momentum.
+            * **Bullish Crossover:** When the **MACD line crosses above** the Signal line, it can indicate increasing upward momentum (potential buy signal). The Histogram turns positive (green).
+            * **Bearish Crossover:** When the **MACD line crosses below** the Signal line, it can indicate increasing downward momentum (potential sell signal). The Histogram turns negative (red).
+        """)
