@@ -173,10 +173,13 @@ class XGBoostModel(ForecastingModel):
         if not XGB_AVAILABLE:
             print("XGBoost not installed. Install with: pip install xgboost")
             return False
-        
+
         try:
+            # Ensure data is sorted by timestamp
+            df = df.sort_values('timestamp').reset_index(drop=True)
             df_features = self._engineer_features(df, target_col)
             if len(df_features) < 10:
+                print(f"Insufficient data after feature engineering: {len(df_features)} rows")
                 return False
             
             self.last_data = df_features.tail(10).copy()

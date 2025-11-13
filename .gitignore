@@ -52,6 +52,7 @@ data/
 # Logs
 *.log
 
+TODO.md
 # macOS
 .DS_Store
 
