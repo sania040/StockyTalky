@@ -11,8 +11,8 @@ def load_css():
         /* --- Global Styles --- */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #F8FAFC; /* Lighter background */
-            color: #374151; /* Darker gray text */
+            background-color: #1a1a1a; /* Dark background */
+            color: #e5e5e5; /* Light text */
         }
         .stApp {
             max-width: 1300px; /* Slightly wider */
@@ -24,11 +24,11 @@ def load_css():
 
         /* --- Typography --- */
         h1, h2, h3, h4, h5, h6 {
-            color: #1E3A8A; /* Consistent header blue */
+            color: #60a5fa; /* Light blue headers */
             font-weight: 600;
         }
         h1 {
-            border-bottom: 2px solid #DBEAFE; /* Light blue underline */
+            border-bottom: 2px solid #3b82f6; /* Blue underline */
             padding-bottom: 0.75rem;
             margin-bottom: 1.5rem;
         }
@@ -47,11 +47,11 @@ def load_css():
 
         /* --- Sidebar --- */
         [data-testid="stSidebar"] {
-            background-color: #FFFFFF;
-            border-right: 1px solid #E5E7EB;
+            background-color: #2d2d2d; /* Dark sidebar */
+            border-right: 1px solid #404040;
         }
         [data-testid="stSidebar"] h1 {
-            color: #1E3A8A;
+            color: #60a5fa;
             font-size: 1.8rem;
             border-bottom: none; /* Remove underline in sidebar */
         }
@@ -59,9 +59,10 @@ def load_css():
             padding: 0.5rem 0.75rem; /* Add padding to radio items */
             border-radius: 8px;
             transition: background-color 0.2s ease;
+            color: #e5e5e5;
         }
         [data-testid="stSidebar"] .stRadio > label > div[role="radiogroup"] > label:hover {
-             background-color: #F3F4F6; /* Light hover effect */
+             background-color: #404040; /* Dark hover effect */
         }
 
 
@@ -69,29 +70,29 @@ def load_css():
         .card {
             border-radius: 12px; /* Softer radius */
             padding: 1.5rem;
-            background-color: #FFFFFF;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.04); /* Softer shadow */
+            background-color: #2d2d2d; /* Dark card */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2); /* Darker shadow */
             margin-bottom: 1.5rem;
-            border: 1px solid #E5E7EB; /* Subtle border */
+            border: 1px solid #404040; /* Dark border */
             transition: box-shadow 0.2s ease;
         }
         .card:hover {
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Slightly stronger hover shadow */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3); /* Stronger hover shadow */
         }
 
         /* --- Metric Cards --- */
         /* Apply this class using markdown: st.markdown("<div class='metric-card'>", unsafe_allow_html=True) ... st.markdown("</div>", unsafe_allow_html=True) */
         .metric-card {
-            background-color: #FFFFFF;
+            background-color: #2d2d2d; /* Dark metric card */
             border-radius: 12px;
             padding: 1.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
-            border: 1px solid #E5E7EB;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+            border: 1px solid #404040;
             margin-bottom: 1.5rem;
             transition: box-shadow 0.2s ease;
         }
         .metric-card:hover {
-             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
         }
         .metric-card .stMetric { /* Style Streamlit's metric inside card */
             background-color: transparent !important;
@@ -100,12 +101,12 @@ def load_css():
         }
         .metric-card .stMetric > label { /* Label style */
             font-weight: 500;
-            color: #6B7280; /* Gray label */
+            color: #a3a3a3; /* Light gray label */
         }
         .metric-card .stMetric > div { /* Value style */
             font-size: 2rem;
             font-weight: 600;
-            color: #111827; /* Dark value */
+            color: #e5e5e5; /* Light value */
         }
         .metric-card .stMetric > div[data-testid="metric-delta"] { /* Delta style */
             font-size: 1rem;
@@ -123,7 +124,7 @@ def load_css():
 
         /* --- Header Styles --- */
         .crypto-header {
-            background: linear-gradient(90deg, #1E3A8A 0%, #3B82F6 100%);
+            background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%); /* Darker blue gradient */
             padding: 1.5rem 2rem;
             border-radius: 12px;
             color: white;
@@ -135,7 +136,7 @@ def load_css():
             font-size: 2.2rem;
             margin: 0;
             border: none;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
         .crypto-header p {
             margin: 0.5rem 0 0 0;
@@ -145,7 +146,7 @@ def load_css():
         /* --- Tab Styles --- */
         .stTabs [data-baseweb="tab-list"] {
             gap: 12px; /* Spacing between tabs */
-            border-bottom: 2px solid #E5E7EB; /* Underline for the tab bar */
+            border-bottom: 2px solid #404040; /* Dark underline for the tab bar */
         }
         .stTabs [data-baseweb="tab"] {
             height: auto; /* Allow height to adjust */
@@ -154,13 +155,13 @@ def load_css():
             padding: 0.75rem 0.5rem; /* Adjust padding */
             margin-bottom: -2px; /* Align with bottom border */
             border-bottom: 2px solid transparent; /* Placeholder border */
-            color: #6B7280; /* Gray inactive text */
+            color: #a3a3a3; /* Light gray inactive text */
             transition: all 0.2s ease;
         }
         .stTabs [aria-selected="true"] {
             background-color: transparent;
-            color: #1E3A8A; /* Blue active text */
-            border-bottom: 2px solid #2563EB; /* Blue underline for active tab */
+            color: #60a5fa; /* Light blue active text */
+            border-bottom: 2px solid #3b82f6; /* Blue underline for active tab */
             font-weight: 600;
         }
 
@@ -169,27 +170,29 @@ def load_css():
             border-radius: 8px;
             padding: 0.6rem 1.2rem;
             font-weight: 500;
-            background-color: #2563EB; /* Primary blue */
+            background-color: #3b82f6; /* Light blue */
             color: white;
             border: none;
             transition: background-color 0.2s ease, box-shadow 0.2s ease;
         }
         .stButton>button:hover {
-            background-color: #1D4ED8; /* Darker blue */
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            background-color: #2563eb; /* Darker blue */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
          .stButton>button:active {
-             background-color: #1E40AF;
+             background-color: #1d4ed8;
          }
 
         /* --- Input Styles --- */
          .stTextInput>div>div>input, .stSelectbox>div>div>div {
              border-radius: 8px !important;
-             border: 1px solid #D1D5DB !important;
+             border: 1px solid #404040 !important;
+             background-color: #2d2d2d !important;
+             color: #e5e5e5 !important;
          }
          .stTextInput>div>div>input:focus, .stSelectbox>div>div>div:focus-within {
-             border-color: #2563EB !important;
-             box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2) !important;
+             border-color: #3b82f6 !important;
+             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
          }
 
     </style>
