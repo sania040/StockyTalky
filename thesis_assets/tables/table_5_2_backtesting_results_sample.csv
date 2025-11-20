@@ -1,0 +1,7 @@
+coin,model,test_days,test_start,test_end,train_rows,test_rows,dataset_length,mape(%),rmse(USD),notes
+BTC,Prophet,7,2025-11-01,2025-11-07,700,7,707,12.34,110.45,Sample values - replace with real results
+BTC,XGBoost,7,2025-11-01,2025-11-07,700,7,707,8.92,78.22,Sample values - replace with real results
+ETH,Prophet,7,2025-11-01,2025-11-07,650,7,657,15.80,9.32,Sample values - replace
+ETH,XGBoost,7,2025-11-01,2025-11-07,650,7,657,10.10,7.54,Sample values - replace
+ADA,Prophet,7,2025-11-01,2025-11-07,300,7,307,25.50,0.05,High variance; more data needed
+ADA,XGBoost,7,2025-11-01,2025-11-07,300,7,307,18.30,0.03,Works better than Prophet in some windows

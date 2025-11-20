@@ -1,0 +1,7 @@
+column_name,data_type,units,constraints,nullability,description,notes
+symbol,TEXT,,PK part (symbol, timestamp),NOT NULL,Symbol ticker (e.g., BTC),
+price_usd,NUMERIC(18,8),USD,none,NOT NULL,Price in USD at snapshot,Decimal precision example (18,8)
+volume_24h_usd,NUMERIC(24,2),USD,none,NULLABLE,24-hour trade volume in USD,May exceed 1e9 for high-turnover coins
+percent_change_24h,NUMERIC(8,4),%,none,NULLABLE,Percentage change vs 24h ago (may be null),Nullable if API omits value
+market_cap_usd,NUMERIC(24,2),USD,none,NOT NULL,Market capitalization in USD,Use BIGINT if needed for some DB engines
+timestamp,TIMESTAMP,UTC,PK part (symbol, timestamp),NOT NULL,UTC timestamp of snapshot,Prefer TIMESTAMP WITHOUT TIME ZONE and store UTC
