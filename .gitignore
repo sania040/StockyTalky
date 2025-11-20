@@ -52,6 +52,7 @@ data/
 # Logs
 *.log
 
+TODO.md
 # macOS
 .DS_Store
 
@@ -61,3 +62,6 @@ ehthumbs.db
 
 
 backup_files
+
+memory-bank
+.github

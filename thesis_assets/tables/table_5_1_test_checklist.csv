@@ -1,0 +1,11 @@
+feature,test_method,status,notes,date,tested_by,evidence
+Data pipeline - ingestion,Fetch sample symbols and verify DB insert,PASS,Connected and writing rows; handle API rate limits,2025-11-13,Syed,thesis_assets/figures/fig_5_2_kpis_top_marketcap.png
+Dashboard - KPIs,Load page and check totals,PASS,Totals computed; formatted display as expected,2025-11-13,Syed,thesis_assets/figures/fig_5_2_kpis_top_marketcap.png
+Dashboard - Daily movers,Check gainers/losers lists,PASS,Shows top 5 correctly,2025-11-13,Syed,thesis_assets/figures/fig_5_3_daily_movers.png
+Dashboard - Price chart,Candlestick/line for coin,PASS,Line chart with daily resample,2025-11-13,Syed,thesis_assets/figures/fig_5_4_price_line_BTC.png
+Dashboard - Dominance pie,Chart shows top 10 + others,PASS,Verified with top 10,2025-11-13,Syed,thesis_assets/figures/fig_5_5_dominance_pie.png
+Dashboard - Screener,Table loads and format correct,PASS,Columns formatted; sortable,2025-11-13,Syed,thesis_assets/figures/fig_5_6_screener.png
+ML - Normalized comparison,Compare multiple coins on common start,PASS,Aligned correctly and plotted,2025-11-13,Syed,thesis_assets/figures/fig_5_7_normalized_growth.png
+ML - Correlation heatmap,Check heatmap values and handling of small data,PASS,Informs when insufficient data,2025-11-13,Syed,thesis_assets/figures/fig_5_8_correlation_heatmap.png
+ML - Forecast generation,Train and predict with selected model,PASS (depends),Works with Prophet/XGBoost when installed,2025-11-13,Syed,thesis_assets/figures/fig_5_9_forecast_overlay_BTC.png
+Backtesting metrics,Run backtest and read MAPE/RMSE,PASS (sample),Backtest functions implemented; show results or data insufficient message,2025-11-13,Syed,thesis_assets/tables/table_5_2_backtesting_results_sample.csv

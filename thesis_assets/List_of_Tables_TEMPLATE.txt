@@ -1,0 +1,8 @@
+List of Tables (Template — update page numbers after placing in thesis)
+
+Table 3.1: Database Schema for crypto_prices ................... [page]
+Table 4.1: Core Python Libraries and Roles ..................... [page]
+Table 4.2: XGBoost Features and Description .................... [page]
+Table 5.1: Test Checklist and Status ........................... [page]
+Table 5.2: Backtesting Results by Model and Coin ............... [page]
+Table 6.1: Objectives vs Achievements .......................... [page]

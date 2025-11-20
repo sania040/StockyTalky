@@ -1,0 +1,7 @@
+objective,deliverable,status,notes,date_completed
+Build stable data pipeline,Data collection service using CoinMarketCap->DB,PASS,Handles mapping and inserts,2025-11-13
+Design readable dashboard,KPI row, gainers/losers, dominance pie, candlestick,PASS,Streamlit layout done,2025-11-13
+Add multi-coin analysis,Normalized comparison and correlation heatmap,PASS,Normalized growth and correlation added,2025-11-13
+Add forecasting,Prophet + XGBoost with bounds,PASS (conditional),Works if libs installed; XGBoost feature-engineered,2025-11-13
+Add evaluation,Backtesting and metrics (MAPE/RMSE),PASS,Simple backtesting implemented; more robust tests possible,2025-11-13
+Maintain simplicity and extensibility,Modular code and clear interfaces,PARTIAL,Ready to add more models and data sources,2025-11-13

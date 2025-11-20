@@ -1,0 +1,17 @@
+library,purpose,version,note
+requests,HTTP client,Not pinned,Calls CoinMarketCap API
+psycopg2-binary,Postgres client,Not pinned,DB connector for PostgreSQL/Supabase
+python-dotenv,Environment loader,Not pinned,Loads .env variables (API keys, DB creds)
+pandas,Data handling,Not pinned,Tabular data, cleaning, and feature engineering
+streamlit,UI framework,Not pinned,Web app for dashboard and ML pages
+plotly,Interactive plotting,Not pinned,Charts like line, candlestick, and pie
+sqlalchemy,DB ORM (optional),Not pinned,Optional higher-level DB access
+numpy,Numeric computations,Not pinned,Array-level math and statistics
+scikit-learn,Utility ML tools,Not pinned,Metrics + preprocessing utilities
+xgboost,Modeling,Not pinned,XGBoost regressor
+prophet,Time-series model,Not pinned,Prophet time-series forecasting
+seaborn,Statistical plotting,Not pinned,Heatmaps and styled charts
+matplotlib,Basic plotting,Not pinned,Utility plotting for static figures
+langchain-core,Utility,0.2.9,Used for project helper tools
+langchain-community,Utility,0.2.5,
+langchain-groq,Utility,0.1.5,

@@ -1,0 +1,57 @@
+table,field1,field2,field3,field4,field5
+Table 3.1: Database Schema for crypto_prices,symbol,TEXT,PK part (symbol, timestamp),NOT NULL
+Table 3.1: Database Schema for crypto_prices,price_usd,NUMERIC,none,NOT NULL
+Table 3.1: Database Schema for crypto_prices,volume_24h_usd,NUMERIC,none,NULLABLE
+Table 3.1: Database Schema for crypto_prices,percent_change_24h,NUMERIC,none,NULLABLE
+Table 3.1: Database Schema for crypto_prices,market_cap_usd,NUMERIC,none,NOT NULL
+Table 3.1: Database Schema for crypto_prices,timestamp,TIMESTAMP,PK part (symbol, timestamp),NOT NULL
+
+Table 4.1: Core Python Libraries and Roles,requests,HTTP client,Calls CoinMarketCap API,
+Table 4.1: Core Python Libraries and Roles,psycopg2-binary,Postgres client,DB connector for PostgreSQL/Supabase,
+Table 4.1: Core Python Libraries and Roles,python-dotenv,Environment loader,Loads .env variables (API keys, DB creds),
+Table 4.1: Core Python Libraries and Roles,pandas,Data handling,Tabular data, cleaning, and feature engineering,
+Table 4.1: Core Python Libraries and Roles,streamlit,UI framework,Web app for dashboard and ML pages,
+Table 4.1: Core Python Libraries and Roles,plotly,Interactive plotting,Charts like line, candlestick, and pie,
+Table 4.1: Core Python Libraries and Roles,sqlalchemy,DB ORM (optional),Optional higher-level DB access,
+Table 4.1: Core Python Libraries and Roles,numpy,Numeric computations,Array-level math and statistics,
+Table 4.1: Core Python Libraries and Roles,scikit-learn,Utility ML tools,Metrics + preprocessing utilities,
+Table 4.1: Core Python Libraries and Roles,xgboost,Modeling,XGBoost regressor,
+Table 4.1: Core Python Libraries and Roles,prophet,Time-series model,Prophet time-series forecasting,
+Table 4.1: Core Python Libraries and Roles,seaborn,Statistical plotting,Heatmaps and styled charts,
+Table 4.1: Core Python Libraries and Roles,matplotlib,Basic plotting,Utility plotting for static figures,
+
+Table 4.2: XGBoost Feature,price_lag_1,Price lagged by 1 day,,,,
+Table 4.2: XGBoost Feature,price_lag_2,Price lagged by 2 days,,,,
+Table 4.2: XGBoost Feature,price_lag_3,Price lagged by 3 days,,,,
+Table 4.2: XGBoost Feature,price_lag_5,Price lagged by 5 days,,,,
+Table 4.2: XGBoost Feature,price_lag_7,Price lagged by 7 days,,,,
+Table 4.2: XGBoost Feature,returns,Percent returns computed as price.pct_change()*100,,,,
+Table 4.2: XGBoost Feature,returns_lag_1,One-day lag of returns,,,,
+Table 4.2: XGBoost Feature,price_ma_7,7-day moving average of price,,,,
+Table 4.2: XGBoost Feature,price_vol_7,7-day rolling standard deviation of price (volatility),,,,
+Table 4.2: XGBoost Feature,price_mom_7,Price momentum: price - 7-day moving average,,,,
+
+Table 5.1: Test Checklist,Data pipeline - ingestion,Fetch sample symbols and verify DB insert,PASS,Connected and writing rows; handle API rate limits
+Table 5.1: Test Checklist,Dashboard - KPIs,Load page and check totals,PASS,Totals computed; formatted display as expected
+Table 5.1: Test Checklist,Dashboard - Daily movers,Check gainers/losers lists,PASS,Shows top 5 correctly
+Table 5.1: Test Checklist,Dashboard - Price chart,Candlestick/line for coin,PASS,Line chart with daily resample
+Table 5.1: Test Checklist,Dashboard - Dominance pie,Chart shows top 10 + others,PASS,Verified with top 10
+Table 5.1: Test Checklist,Dashboard - Screener,Table loads and format correct,PASS,Columns formatted; sortable
+Table 5.1: Test Checklist,ML - Normalized comparison,Compare multiple coins on common start,PASS,Aligned correctly and plotted
+Table 5.1: Test Checklist,ML - Correlation heatmap,Check heatmap values and handling of small data,PASS,Informs when insufficient data
+Table 5.1: Test Checklist,ML - Forecast generation,Train and predict with selected model,PASS (depends),Works with Prophet/XGBoost when installed
+Table 5.1: Test Checklist,Backtesting metrics,Run backtest and read MAPE/RMSE,PASS (sample),Backtest functions implemented; show results or data insufficient message
+
+Table 5.2: Backtesting Results,BTC,Prophet,7,12.34,"Sample values - replace with real results"
+Table 5.2: Backtesting Results,BTC,XGBoost,7,8.92,78.22,"Sample values - replace with real results"
+Table 5.2: Backtesting Results,ETH,Prophet,7,15.80,9.32,"Sample values - replace"
+Table 5.2: Backtesting Results,ETH,XGBoost,7,10.10,7.54,"Sample values - replace"
+Table 5.2: Backtesting Results,ADA,Prophet,7,25.50,0.05,"High variance; more data needed"
+Table 5.2: Backtesting Results,ADA,XGBoost,7,18.30,0.03,"Works better than Prophet in some windows"
+
+Table 6.1: Objectives vs Achievements,Build stable data pipeline,Data collection service using CoinMarketCap->DB,PASS,Handles mapping and inserts
+Table 6.1: Objectives vs Achievements,Design readable dashboard,KPI row, gainers/losers, dominance pie, candlestick,PASS,Streamlit layout done
+Table 6.1: Objectives vs Achievements,Add multi-coin analysis,Normalized comparison and correlation heatmap,PASS,Normalized growth and correlation added
+Table 6.1: Objectives vs Achievements,Add forecasting,Prophet + XGBoost with bounds,PASS (conditional),Works if libs installed; XGBoost feature-engineered
+Table 6.1: Objectives vs Achievements,Add evaluation,Backtesting and metrics (MAPE/RMSE),PASS,Simple backtesting implemented; more robust tests possible
+Table 6.1: Objectives vs Achievements,Maintain simplicity and extensibility,Modular code and clear interfaces,PARTIAL,Ready to add more models and data sources

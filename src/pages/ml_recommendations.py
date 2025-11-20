@@ -10,6 +10,7 @@ from prophet.plot import plot_plotly, plot_components_plotly
 # >>> END BACKTESTING
 from src.db.get_connection import get_db_connection
 from src.db.query_utils import execute_query
+from src.ml.forecasting import get_available_models
 
 # --- Data Loading Function ---
 
@@ -108,91 +109,69 @@ def show():
 
     st.markdown("---")
 
-    # --- Feature 3: Price Forecasting with Prophet ---
-    st.header("🔮 Simple Price Forecasting")
-    st.info("Uses the Prophet model to forecast future price action.")
+    # --- Feature 3: Price Forecasting with ML Models ---
+    st.header("🔮 Price Forecasting")
+    st.info("Uses selected ML model (Prophet or XGBoost) to forecast future price action.")
 
     col1, col2 = st.columns([1, 2])
     with col1:
         forecast_symbol = st.selectbox(
-            "Select a cryptocurrency to forecast:", 
-            options=all_symbols, 
+            "Select a cryptocurrency to forecast:",
+            options=all_symbols,
             key="forecast_symbol_select"
         )
+        available_models = get_available_models()
+        model_options = list(available_models.keys())
+        selected_model = st.selectbox(
+            "Select forecasting model:",
+            options=model_options,
+            key="model_select"
+        )
         forecast_days = st.slider("Select forecast period (days):", min_value=7, max_value=90, value=30)
-        # <<< BACKTESTING: test_days definition (keep this line, used in commented check below)
-        # test_days = 7 
-        # >>> END BACKTESTING
 
-    if st.button(f"Generate Forecast for {forecast_symbol}"):
-        with st.spinner(f"Training model and forecasting for {forecast_symbol}..."): # Updated spinner text
+    if st.button(f"Generate Forecast for {forecast_symbol} with {selected_model}"):
+        if selected_model not in available_models:
+            st.error(f"Model {selected_model} not available.")
+        else:
+            model_instance = available_models[selected_model]
             symbol_data = all_data[all_data['symbol'] == forecast_symbol][['timestamp', 'price_usd']].copy()
-            prophet_df = symbol_data.rename(columns={'timestamp': 'ds', 'price_usd': 'y'})
-            prophet_df['ds'] = prophet_df['ds'].dt.tz_localize(None)
+            symbol_data = symbol_data.sort_values('timestamp').reset_index(drop=True)
 
-            # --- Simplified check (runs forecast even with less data for now) ---
-            min_data_points_basic = 3 # Prophet needs >= 2
-            if len(prophet_df) < min_data_points_basic:
-                 st.error(f"Not enough historical data ({len(prophet_df)} points) to generate a forecast (need at least {min_data_points_basic}).")
-            # <<< BACKTESTING: Original check requiring more data (keep commented)
-            # min_data_points_backtest = 10 + test_days 
-            # if len(prophet_df) < min_data_points_backtest:
-            #     st.error(f"Not enough historical data ({len(prophet_df)} points) to perform a reliable {test_days}-day backtest (need at least {min_data_points_backtest}).")
-            # >>> END BACKTESTING
+            if len(symbol_data) < 7:
+                st.error(f"Not enough historical data ({len(symbol_data)} points) to generate a forecast (need at least 7 days).")
             else:
-                # --- Train Model (using all available data) ---
-                model = Prophet()
-                model.fit(prophet_df) 
+                with st.spinner(f"Training {selected_model} and forecasting for {forecast_symbol}..."):
+                    if model_instance.fit(symbol_data):
+                        forecast_df = model_instance.predict(forecast_days)
 
-                # --- Make Future Predictions ---
-                future = model.make_future_dataframe(periods=forecast_days) 
-                forecast = model.predict(future)
+                        if not forecast_df.empty:
+                            # Display Forecast
+                            st.subheader(f"Forecast for {forecast_symbol} using {selected_model}")
 
-                # --- Display Forecast ---
-                st.subheader(f"Forecast for {forecast_symbol}")
-                fig_forecast = plot_plotly(model, forecast)
-                st.plotly_chart(fig_forecast, use_container_width=True)
+                            # Create a plotly figure for forecast
+                            fig = px.line()
+                            # Add historical data
+                            fig.add_scatter(x=symbol_data['timestamp'], y=symbol_data['price_usd'], mode='lines', name='Historical')
+                            # Add forecast
+                            fig.add_scatter(x=forecast_df['timestamp'], y=forecast_df['forecast'], mode='lines', name='Forecast', line=dict(dash='dash'))
+                            fig.add_scatter(x=forecast_df['timestamp'], y=forecast_df['lower_bound'], mode='lines', name='Lower Bound', line=dict(color='gray', dash='dot'))
+                            fig.add_scatter(x=forecast_df['timestamp'], y=forecast_df['upper_bound'], mode='lines', name='Upper Bound', line=dict(color='gray', dash='dot'))
+                            fig.update_layout(title=f"{selected_model} Forecast for {forecast_symbol}", xaxis_title="Date", yaxis_title="Price (USD)")
+                            st.plotly_chart(fig, use_container_width=True)
 
-                # <<< BACKTESTING: Accuracy Calculation Section (Keep Commented Out) ---
-                # st.subheader("Backtest Accuracy Check")
-                # # Check if enough data existed for the backtest split
-                # min_data_points_backtest = 10 + test_days 
-                # if len(prophet_df) >= min_data_points_backtest:
-                #     try:
-                #         # Split data for backtesting
-                #         train_df = prophet_df[:-test_days]
-                #         test_df = prophet_df[-test_days:]
-                # 
-                #         # Train a separate model ONLY on the training data
-                #         model_backtest = Prophet()
-                #         model_backtest.fit(train_df)
-                # 
-                #         # Predict ONLY the test period
-                #         future_test = model_backtest.make_future_dataframe(periods=test_days) 
-                #         forecast_test_all = model_backtest.predict(future_test)
-                #         # Extract only the predictions corresponding to the actual test dates
-                #         forecast_test = forecast_test_all[-test_days:] 
-                # 
-                #         # Merge actual vs predicted for the test period
-                #         eval_df = pd.merge(test_df, forecast_test[['ds', 'yhat']], on='ds', how='inner')
-                # 
-                #         if not eval_df.empty:
-                #             # Calculate MAPE
-                #             mape = mean_absolute_percentage_error(eval_df['y'], eval_df['yhat']) * 100
-                #             # Display Accuracy Metric
-                #             st.metric(
-                #                 label=f"Accuracy (MAPE on last {test_days} days)",
-                #                 value=f"{mape:.2f}%",
-                #                 help="Mean Absolute Percentage Error vs the last 7 days. Lower is better."
-                #             )
-                #         else:
-                #             st.warning("Could not calculate accuracy (data mismatch during backtesting period).")
-                #     except Exception as e:
-                #         st.warning(f"Could not perform backtest accuracy check: {e}")
-                # else:
-                #     st.warning(f"Not enough data ({len(prophet_df)} points) to perform a {test_days}-day backtest (need at least {min_data_points_backtest}). Accuracy check skipped.")
-                # >>> END BACKTESTING ---
+                            # For Prophet, add components plot
+                            if selected_model == 'Prophet':
+                                prophet_df = symbol_data.rename(columns={'timestamp': 'ds', 'price_usd': 'y'})
+                                prophet_df['ds'] = prophet_df['ds'].dt.tz_localize(None)
+                                model = Prophet()
+                                model.fit(prophet_df)
+                                future = model.make_future_dataframe(periods=forecast_days)
+                                forecast = model.predict(future)
 
-                st.subheader(f"Forecast Components")
-                fig_components = plot_components_plotly(model, forecast)
-                st.plotly_chart(fig_components, use_container_width=True)
+                                st.subheader("Forecast Components")
+                                fig_components = plot_components_plotly(model, forecast)
+                                st.plotly_chart(fig_components, use_container_width=True)
+                        else:
+                            st.error("Failed to generate forecast.")
+                    else:
+                        st.error(f"Failed to fit {selected_model}.")

@@ -1,0 +1,6 @@
+coin,model,test_days,test_start,test_end,train_rows,test_rows,dataset_length,mape(%),rmse(USD),notes
+MATIC,Prophet,7,,,,,1563,,,data_insufficient
+BTC,Prophet,7,,,,,1572,,,data_insufficient
+ETH,Prophet,7,,,,,1570,,,data_insufficient
+USDT,Prophet,7,,,,,1565,,,data_insufficient
+XRP,Prophet,7,,,,,1565,,,data_insufficient
