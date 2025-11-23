@@ -1,7 +1,6 @@
 # src/db/query_utils.py
 
 import pandas as pd
-# REMOVED: No need to import get_db_connection here, as this file should not create connections.
 
 def execute_query(conn, query, params=None):
     """
